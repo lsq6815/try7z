@@ -1,0 +1,22 @@
+[project]
+name = "autoPassTryUnzip"
+version = "0.1.0"
+description = "A 7-Zip frontend for auto-extracting password-protected archives"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
