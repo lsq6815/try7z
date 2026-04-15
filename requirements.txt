@@ -1,1 +1,2 @@
-py7zr>=0.21.0
+# No Python dependencies required
+# Uses bundled 7-Zip executable (lib/win-x64/7z.exe)

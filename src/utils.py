@@ -62,7 +62,7 @@ def get_supported_extensions() -> set[str]:
     Returns:
         Set of supported file extensions (lowercase, with dot).
     """
-    return {".7z", ".zip", ".rar", ".tar", ".gz", ".bz2", ".xz"}
+    return {".7z", ".zip", ".rar"}
 
 
 def is_supported_archive(file_path: Path) -> bool:

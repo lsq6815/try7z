@@ -6,7 +6,8 @@ A 7-Zip frontend application for automatically extracting password-protected arc
 
 - Manage password list (add, remove, list, clear)
 - Automatically try multiple passwords for archive extraction
-- Support for 7z archive format via py7zr library
+- Support for `.7z`, `.zip`, `.rar` formats
+- Bundled 7-Zip executable - no external dependencies
 
 ## Installation
 
@@ -18,11 +19,9 @@ cd autoPassTryUnzip
 # Create virtual environment
 python -m venv venv
 .\venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/macOS
 
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For development
+# Install development dependencies (optional)
+pip install -r requirements-dev.txt
 ```
 
 ## Usage
@@ -83,6 +82,9 @@ mypy src/
 
 ```
 autoPassTryUnzip/
+├── lib/
+│   └── win-x64/
+│       └── 7z.exe            # Bundled 7-Zip executable
 ├── src/
 │   ├── __init__.py
 │   ├── main.py              # CLI entry point
@@ -96,8 +98,6 @@ autoPassTryUnzip/
 │   └── settings.json
 ├── data/
 │   └── passwords.json       # Password storage
-├── requirements.txt
-├── requirements-dev.txt
 └── pyproject.toml
 ```
 
@@ -105,6 +105,13 @@ autoPassTryUnzip/
 
 - Passwords are stored in plain text in `data/passwords.json`
 - The passwords file is excluded from git via `.gitignore`
+
+## Third-Party Software
+
+This project uses [7-Zip](https://www.7-zip.org/) for archive extraction.
+
+- 7-Zip is licensed under the GNU LGPL license
+- Source code available at: https://www.7-zip.org/download.html
 
 ## License
 

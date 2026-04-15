@@ -13,14 +13,24 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 ## Tech Stack
 
 - **Language**: Python 3.10+
-- **Archive Backend**: py7zr library (7z format only)
+- **Archive Backend**: Bundled 7-Zip executable (lib/win-x64/7z.exe)
 - **Password Storage**: JSON file (plain text)
 - **Interface**: CLI
+- **Platform**: Windows x64 only
+
+## Supported Formats
+
+- `.7z` - 7-Zip archive
+- `.zip` - ZIP archive
+- `.rar` - RAR archive
 
 ## Project Structure
 
 ```
 autoPassTryUnzip/
+├── lib/
+│   └── win-x64/
+│       └── 7z.exe            # Bundled 7-Zip executable
 ├── src/
 │   ├── __init__.py
 │   ├── main.py              # CLI entry point
@@ -58,12 +68,10 @@ autoPassTryUnzip/
 
 Example:
 ```python
-import json
+import subprocess
 from pathlib import Path
 
-import py7zr
-
-from src.utils import PasswordManagerError
+from src.utils import ExtractionError
 ```
 
 ### Error Handling
@@ -79,9 +87,10 @@ from src.utils import PasswordManagerError
 - Use pytest as the testing framework
 - Place test files in the `tests/` directory
 - Use `tempfile.TemporaryDirectory` for test fixtures
+- Tests use bundled 7z.exe to create test archives
 
 ### Dependencies
-- Production: `py7zr>=0.21.0`
+- Production: None (uses bundled 7-Zip)
 - Development: `pytest`, `ruff`, `mypy`
 
 ## Commands
@@ -133,6 +142,7 @@ mypy src/
 
 ## Notes
 
-- Only `.7z` format is fully supported via py7zr library
+- Supports `.7z`, `.zip`, `.rar` formats via bundled 7-Zip
 - Passwords are stored in plain text in `data/passwords.json`
 - The `data/passwords.json` file is excluded from git via `.gitignore`
+- 7-Zip is licensed under GNU LGPL (see README.md for details)

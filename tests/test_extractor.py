@@ -1,12 +1,12 @@
 """Tests for Extractor."""
 
+import subprocess
 import tempfile
 from pathlib import Path
 
-import py7zr
 import pytest
 
-from src.extractor import Extractor
+from src.extractor import Extractor, get_7z_path
 from src.utils import InvalidArchiveError, PasswordNotFoundError
 
 
@@ -18,38 +18,82 @@ def temp_dir() -> Path:
 
 
 @pytest.fixture
-def plain_archive(temp_dir: Path) -> Path:
-    """Create a plain (non-encrypted) archive for testing."""
+def seven_zip() -> Path:
+    """Get path to 7z executable."""
+    return get_7z_path()
+
+
+@pytest.fixture
+def plain_7z_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create a plain (non-encrypted) 7z archive for testing."""
     src_dir = temp_dir / "src"
     src_dir.mkdir()
     (src_dir / "test.txt").write_text("Hello, World!")
 
     archive_path = temp_dir / "plain.7z"
-    with py7zr.SevenZipFile(archive_path, "w") as archive:
-        archive.writeall(src_dir, "src")
+    subprocess.run(
+        [str(seven_zip), "a", str(archive_path), str(src_dir)],
+        capture_output=True,
+        check=True,
+    )
     return archive_path
 
 
 @pytest.fixture
-def encrypted_archive(temp_dir: Path) -> Path:
-    """Create an encrypted archive for testing."""
+def encrypted_7z_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create an encrypted 7z archive for testing."""
     src_dir = temp_dir / "src"
     src_dir.mkdir()
     (src_dir / "test.txt").write_text("Secret content!")
 
     archive_path = temp_dir / "encrypted.7z"
-    with py7zr.SevenZipFile(archive_path, "w", password="secret123") as archive:
-        archive.writeall(src_dir, "src")
+    subprocess.run(
+        [str(seven_zip), "a", "-psecret123", "-mhe=on", str(archive_path), str(src_dir)],
+        capture_output=True,
+        check=True,
+    )
+    return archive_path
+
+
+@pytest.fixture
+def plain_zip_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create a plain (non-encrypted) zip archive for testing."""
+    src_dir = temp_dir / "src"
+    src_dir.mkdir()
+    (src_dir / "test.txt").write_text("Hello, ZIP!")
+
+    archive_path = temp_dir / "plain.zip"
+    subprocess.run(
+        [str(seven_zip), "a", str(archive_path), str(src_dir)],
+        capture_output=True,
+        check=True,
+    )
+    return archive_path
+
+
+@pytest.fixture
+def encrypted_zip_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create an encrypted zip archive for testing."""
+    src_dir = temp_dir / "src"
+    src_dir.mkdir()
+    (src_dir / "test.txt").write_text("Secret ZIP content!")
+
+    archive_path = temp_dir / "encrypted.zip"
+    subprocess.run(
+        [str(seven_zip), "a", "-pzipsecret", str(archive_path), str(src_dir)],
+        capture_output=True,
+        check=True,
+    )
     return archive_path
 
 
 class TestExtractor:
     """Test cases for Extractor."""
 
-    def test_init_with_valid_archive(self, plain_archive: Path) -> None:
+    def test_init_with_valid_archive(self, plain_7z_archive: Path) -> None:
         """Test initialization with valid archive."""
-        extractor = Extractor(plain_archive)
-        assert extractor.archive_path == plain_archive.resolve()
+        extractor = Extractor(plain_7z_archive)
+        assert extractor.archive_path == plain_7z_archive.resolve()
 
     def test_init_with_nonexistent_file(self, temp_dir: Path) -> None:
         """Test that nonexistent file raises error."""
@@ -63,9 +107,9 @@ class TestExtractor:
         with pytest.raises(InvalidArchiveError, match="Unsupported"):
             Extractor(unsupported_file)
 
-    def test_extract_plain_archive(self, plain_archive: Path, temp_dir: Path) -> None:
-        """Test extracting a plain archive."""
-        extractor = Extractor(plain_archive)
+    def test_extract_plain_7z_archive(self, plain_7z_archive: Path, temp_dir: Path) -> None:
+        """Test extracting a plain 7z archive."""
+        extractor = Extractor(plain_7z_archive)
         output_dir = temp_dir / "output"
 
         success, password = extractor.try_extract(output_dir)
@@ -74,9 +118,11 @@ class TestExtractor:
         assert password is None
         assert (output_dir / "src" / "test.txt").exists()
 
-    def test_extract_with_password_list(self, encrypted_archive: Path, temp_dir: Path) -> None:
-        """Test extracting with a list of passwords."""
-        extractor = Extractor(encrypted_archive)
+    def test_extract_encrypted_7z_with_password_list(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted 7z with a list of passwords."""
+        extractor = Extractor(encrypted_7z_archive)
         output_dir = temp_dir / "output"
         passwords = ["wrong1", "wrong2", "secret123", "wrong3"]
 
@@ -85,20 +131,45 @@ class TestExtractor:
         assert success is True
         assert used_password == "secret123"
 
-    def test_extract_wrong_password_raises(self, encrypted_archive: Path, temp_dir: Path) -> None:
+    def test_extract_wrong_password_raises(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
         """Test that wrong passwords raise PasswordNotFoundError."""
-        extractor = Extractor(encrypted_archive)
+        extractor = Extractor(encrypted_7z_archive)
         output_dir = temp_dir / "output"
         wrong_passwords = ["wrong1", "wrong2", "wrong3"]
 
         with pytest.raises(PasswordNotFoundError):
             extractor.extract_with_passwords(wrong_passwords, output_dir)
 
-    def test_extract_creates_output_dir(self, plain_archive: Path, temp_dir: Path) -> None:
+    def test_extract_creates_output_dir(self, plain_7z_archive: Path, temp_dir: Path) -> None:
         """Test that extraction creates output directory."""
-        extractor = Extractor(plain_archive)
+        extractor = Extractor(plain_7z_archive)
         output_dir = temp_dir / "new_output"
 
         assert not output_dir.exists()
         extractor.try_extract(output_dir)
         assert output_dir.exists()
+
+    def test_extract_plain_zip_archive(self, plain_zip_archive: Path, temp_dir: Path) -> None:
+        """Test extracting a plain zip archive."""
+        extractor = Extractor(plain_zip_archive)
+        output_dir = temp_dir / "output"
+
+        success, password = extractor.try_extract(output_dir)
+
+        assert success is True
+        assert password is None
+        assert (output_dir / "src" / "test.txt").exists()
+
+    def test_extract_encrypted_zip_with_password(
+        self, encrypted_zip_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted zip with correct password."""
+        extractor = Extractor(encrypted_zip_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(output_dir, ["zipsecret"])
+
+        assert success is True
+        assert used_password == "zipsecret"

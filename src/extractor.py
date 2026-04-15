@@ -1,8 +1,8 @@
-"""Archive extraction logic using py7zr."""
+"""Archive extraction logic using 7-Zip subprocess."""
 
+import platform
+import subprocess
 from pathlib import Path
-
-import py7zr
 
 from src.utils import (
     ExtractionError,
@@ -11,6 +11,29 @@ from src.utils import (
     is_supported_archive,
     validate_archive_path,
 )
+
+
+def get_7z_path() -> Path:
+    """Get path to 7z executable.
+
+    Returns:
+        Path to 7z.exe (Windows) or 7zz (Linux/macOS).
+    """
+    project_root = Path(__file__).parent.parent
+
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "windows":
+        if machine in ("amd64", "x86_64"):
+            return project_root / "lib" / "win-x64" / "7z.exe"
+    elif system == "linux":
+        if machine in ("amd64", "x86_64"):
+            return project_root / "lib" / "linux-x64" / "7zz"
+    elif system == "darwin":
+        return project_root / "lib" / "mac-x64" / "7zz"
+
+    raise ExtractionError(f"Unsupported platform: {system} {machine}")
 
 
 class Extractor:
@@ -29,6 +52,8 @@ class Extractor:
 
         if not is_supported_archive(self.archive_path):
             raise InvalidArchiveError(f"Unsupported archive format: {self.archive_path.suffix}")
+
+        self._7z_path = get_7z_path()
 
     def try_extract(
         self,
@@ -85,21 +110,33 @@ class Extractor:
         Raises:
             ExtractionError: If extraction fails for non-password reasons.
         """
+        cmd = [str(self._7z_path), "x", "-y", f"-o{output_dir}", str(self.archive_path)]
+
+        if password:
+            cmd.insert(3, f"-p{password}")
+
         try:
-            with py7zr.SevenZipFile(self.archive_path, mode="r", password=password) as archive:
-                archive.extractall(path=output_dir)
-            return True
-        except py7zr.exceptions.PasswordRequired:
-            return False
-        except py7zr.exceptions.Bad7zFile as e:
-            raise InvalidArchiveError(f"Invalid or corrupted archive: {e}")
-        except py7zr.exceptions.UnsupportedCompressionMethodError as e:
-            raise ExtractionError(f"Unsupported compression method: {e}")
-        except Exception as e:
-            error_msg = str(e).lower()
-            if "password" in error_msg or "decrypt" in error_msg or "corrupt" in error_msg:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            if result.returncode == 0:
+                return True
+
+            error_output = result.stderr.lower() + result.stdout.lower()
+
+            if "wrong password" in error_output or "password" in error_output:
                 return False
-            raise ExtractionError(f"Extraction failed: {e}")
+
+            raise ExtractionError(f"Extraction failed: {result.stderr or result.stdout}")
+
+        except subprocess.TimeoutExpired:
+            raise ExtractionError("Extraction timed out")
+        except FileNotFoundError:
+            raise ExtractionError(f"7-Zip executable not found: {self._7z_path}")
 
     def extract_with_passwords(
         self,
