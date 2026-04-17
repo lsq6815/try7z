@@ -41,14 +41,26 @@ After installation, use the `autopass-unzip` command:
 ### Password Management
 
 ```bash
-# Add a password
+# Add password(s)
 autopass-unzip add "my_password"
+autopass-unzip add "pwd1" "pwd2" "pwd3"  # Add multiple at once
 
-# List stored passwords
+# List stored passwords (shows 1-based index)
 autopass-unzip list
 
-# Remove a password
+# Remove password(s) by value
 autopass-unzip remove "my_password"
+autopass-unzip remove "pwd1" "pwd2" "pwd3"  # Remove multiple at once
+
+# Remove password(s) by index (from 'list' command)
+autopass-unzip remove -i 3          # Remove index 3
+autopass-unzip remove -i 1 5 10     # Remove multiple indices
+
+# Show passwords file path
+autopass-unzip path
+
+# Open passwords file in default editor
+autopass-unzip edit
 
 # Clear all passwords (with confirmation)
 autopass-unzip clear

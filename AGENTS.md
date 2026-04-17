@@ -112,11 +112,13 @@ After installation, the `autopass-unzip` CLI command is available globally.
 autopass-unzip <command> [options]
 
 # Commands:
-#   add <password>     Add a password
-#   remove <password>  Remove a password
-#   list               List stored passwords
-#   clear [-f]         Clear all passwords
-#   extract <archive>  Extract an archive
+#   add <password> [<password> ...]       Add password(s)
+#   remove [-i N [N ...]] [<password> ...]  Remove by value(s) or index
+#   list                                  List stored passwords (with 1-based index)
+#   path                                  Show passwords file path
+#   edit                                  Open passwords file in default editor
+#   clear [-f]                            Clear all passwords
+#   extract <archive>                     Extract an archive
 ```
 
 ### Run Application (Development)

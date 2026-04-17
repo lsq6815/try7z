@@ -90,3 +90,22 @@ class PasswordManager:
             Number of passwords.
         """
         return len(self._passwords)
+
+    def remove_by_index(self, index: int) -> str:
+        """Remove password by index.
+
+        Args:
+            index: 0-based index to remove.
+
+        Returns:
+            The removed password string.
+
+        Raises:
+            PasswordManagerError: If index is out of range.
+        """
+        if not 0 <= index < len(self._passwords):
+            raise PasswordManagerError(f"Index {index + 1} out of range")
+
+        removed = self._passwords.pop(index)
+        self._save_passwords()
+        return removed

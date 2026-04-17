@@ -87,3 +87,64 @@ class TestPasswordManager:
         data = json.loads(content)
 
         assert "secret_password" in data["passwords"]
+
+
+class TestRemoveByIndex:
+    """Test cases for remove_by_index method."""
+
+    def test_remove_by_index_success(self, manager: PasswordManager) -> None:
+        """Test removing password by valid index."""
+        manager.add_password("first")
+        manager.add_password("second")
+        manager.add_password("third")
+
+        removed = manager.remove_by_index(1)  # 0-based, removes "second"
+
+        assert removed == "second"
+        assert manager.get_passwords() == ["first", "third"]
+        assert manager.count() == 2
+
+    def test_remove_by_index_first(self, manager: PasswordManager) -> None:
+        """Test removing first password by index."""
+        manager.add_password("first")
+        manager.add_password("second")
+
+        removed = manager.remove_by_index(0)
+
+        assert removed == "first"
+        assert "first" not in manager.get_passwords()
+
+    def test_remove_by_index_last(self, manager: PasswordManager) -> None:
+        """Test removing last password by index."""
+        manager.add_password("first")
+        manager.add_password("second")
+
+        removed = manager.remove_by_index(1)
+
+        assert removed == "second"
+        assert manager.get_passwords() == ["first"]
+
+    def test_remove_by_index_out_of_range(self, manager: PasswordManager) -> None:
+        """Test that invalid index raises error."""
+        manager.add_password("only")
+
+        with pytest.raises(PasswordManagerError, match="out of range"):
+            manager.remove_by_index(5)
+
+        with pytest.raises(PasswordManagerError, match="out of range"):
+            manager.remove_by_index(-1)
+
+    def test_remove_by_index_empty_list(self, manager: PasswordManager) -> None:
+        """Test removing from empty list."""
+        with pytest.raises(PasswordManagerError, match="out of range"):
+            manager.remove_by_index(0)
+
+    def test_remove_by_index_persistence(self, manager: PasswordManager) -> None:
+        """Test that remove_by_index saves to file."""
+        manager.add_password("test")
+
+        manager.remove_by_index(0)
+
+        # Create new instance to verify persistence
+        manager2 = PasswordManager(data_dir=manager.data_dir)
+        assert "test" not in manager2.get_passwords()
