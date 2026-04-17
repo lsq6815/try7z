@@ -293,14 +293,6 @@ def main() -> int:
     Returns:
         Exit code.
     """
-    version_string = (
-        f"autopasstryunzip {__version__}\n"
-        f"\n"
-        f"A 7-Zip frontend for auto-extracting password-protected archives\n"
-        f"\n"
-        f"Using 7-Zip binary: {get_7z_version()}"
-    )
-
     parser = argparse.ArgumentParser(
         prog="autopass-unzip",
         description="Auto-extract password-protected archives",
@@ -308,8 +300,7 @@ def main() -> int:
     parser.add_argument(
         "-v",
         "--version",
-        action="version",
-        version=version_string,
+        action="store_true",
         help="Show version information and exit",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -350,6 +341,14 @@ def main() -> int:
     extract_parser.set_defaults(func=cmd_extract)
 
     args = parser.parse_args()
+
+    if args.version:
+        print(f"autopasstryunzip {__version__}")
+        print()
+        print("A 7-Zip frontend for auto-extracting password-protected archives")
+        print()
+        print(f"Using 7-Zip binary: {get_7z_version()}")
+        return 0
 
     if args.command is None:
         parser.print_help()
