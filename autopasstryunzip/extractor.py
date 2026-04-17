@@ -37,6 +37,26 @@ def get_7z_path() -> Path:
     raise ExtractionError(f"Unsupported platform: {system} {machine}")
 
 
+def get_7z_version() -> str:
+    """Get 7-Zip version string.
+
+    Returns:
+        Version string from 7-Zip (first line of -version output),
+        or "unknown" if version cannot be determined.
+    """
+    try:
+        result = subprocess.run(
+            [str(get_7z_path()), "-version"],
+            capture_output=True,
+            text=True,
+        )
+        # First line contains version info, e.g.:
+        # "7-Zip (r) 26.00 (x86) : Igor Pavlov : Public domain : 2026-02-12"
+        return result.stdout.strip().split("\n")[0]
+    except Exception:
+        return "unknown"
+
+
 class Extractor:
     """Handle archive extraction with automatic password attempts."""
 

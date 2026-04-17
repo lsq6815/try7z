@@ -7,7 +7,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from autopasstryunzip.extractor import Extractor
+from autopasstryunzip import __version__
+from autopasstryunzip.extractor import Extractor, get_7z_version
 from autopasstryunzip.password_manager import PasswordManager
 from autopasstryunzip.utils import AutoPassError, PasswordNotFoundError
 
@@ -292,9 +293,24 @@ def main() -> int:
     Returns:
         Exit code.
     """
+    version_string = (
+        f"autopasstryunzip {__version__}\n"
+        f"\n"
+        f"A 7-Zip frontend for auto-extracting password-protected archives\n"
+        f"\n"
+        f"Using 7-Zip binary: {get_7z_version()}"
+    )
+
     parser = argparse.ArgumentParser(
         prog="autopass-unzip",
         description="Auto-extract password-protected archives",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=version_string,
+        help="Show version information and exit",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
