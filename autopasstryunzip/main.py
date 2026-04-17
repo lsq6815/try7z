@@ -296,6 +296,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         prog="autopass-unzip",
         description="Auto-extract password-protected archives",
+        add_help=False,
+    )
+    parser.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=argparse.SUPPRESS,
+        help="Show this help message and exit",
     )
     parser.add_argument(
         "-v",
