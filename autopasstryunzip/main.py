@@ -5,9 +5,9 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from src.extractor import Extractor
-from src.password_manager import PasswordManager
-from src.utils import AutoPassError, PasswordNotFoundError
+from autopasstryunzip.extractor import Extractor
+from autopasstryunzip.password_manager import PasswordManager
+from autopasstryunzip.utils import AutoPassError, PasswordNotFoundError
 
 
 def cmd_add_password(args: argparse.Namespace) -> int:

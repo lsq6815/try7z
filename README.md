@@ -11,51 +11,71 @@ A 7-Zip frontend application for automatically extracting password-protected arc
 
 ## Installation
 
+### From Source
+
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd autoPassTryUnzip
 
-# Create virtual environment
+# Create virtual environment (recommended)
 python -m venv venv
 .\venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/macOS
 
-# Install development dependencies (optional)
+# Install the package
+pip install .
+```
+
+### Development Installation
+
+```bash
+pip install -e .
 pip install -r requirements-dev.txt
 ```
 
 ## Usage
 
+After installation, use the `autopass-unzip` command:
+
 ### Password Management
 
 ```bash
 # Add a password
-python -m src.main add "my_password"
+autopass-unzip add "my_password"
 
 # List stored passwords
-python -m src.main list
+autopass-unzip list
 
 # Remove a password
-python -m src.main remove "my_password"
+autopass-unzip remove "my_password"
 
 # Clear all passwords (with confirmation)
-python -m src.main clear
+autopass-unzip clear
 
 # Clear all passwords (skip confirmation)
-python -m src.main clear -f
+autopass-unzip clear -f
 ```
 
 ### Archive Extraction
 
 ```bash
 # Extract an archive using stored passwords
-python -m src.main extract path/to/archive.7z
+autopass-unzip extract path/to/archive.7z
 
 # Extract with custom output directory
-python -m src.main extract path/to/archive.7z -o output_dir
+autopass-unzip extract path/to/archive.7z -o output_dir
 
 # Try an additional password first
-python -m src.main extract path/to/archive.7z -p "specific_password"
+autopass-unzip extract path/to/archive.7z -p "specific_password"
+```
+
+### Using Python Module
+
+You can also run the tool using Python's module syntax:
+
+```bash
+python -m autopasstryunzip extract path/to/archive.7z
 ```
 
 ## Development
@@ -75,36 +95,37 @@ ruff check .
 ### Type Checking
 
 ```bash
-mypy src/
+mypy autopasstryunzip/
 ```
 
 ## Project Structure
 
 ```
 autoPassTryUnzip/
-├── lib/
-│   └── win-x64/
-│       └── 7z.exe            # Bundled 7-Zip executable
-├── src/
+├── autopasstryunzip/         # Main package
 │   ├── __init__.py
+│   ├── __main__.py          # Module entry point
 │   ├── main.py              # CLI entry point
 │   ├── password_manager.py  # Password storage and management
 │   ├── extractor.py         # Archive extraction logic
-│   └── utils.py             # Custom exceptions and helpers
+│   ├── utils.py             # Custom exceptions and helpers
+│   └── lib/
+│       └── win-x64/
+│           └── 7z.exe       # Bundled 7-Zip executable
 ├── tests/
 │   ├── test_password_manager.py
 │   └── test_extractor.py
-├── config/
-│   └── settings.json
-├── data/
-│   └── passwords.json       # Password storage
-└── pyproject.toml
+├── pyproject.toml           # Package configuration
+├── MANIFEST.in              # Package data includes
+└── README.md
 ```
 
 ## Storage
 
-- Passwords are stored in plain text in `data/passwords.json`
-- The passwords file is excluded from git via `.gitignore`
+- Passwords are stored in plain text in the platform-specific user data directory:
+  - **Windows**: `%APPDATA%\autoPassTryUnzip\passwords.json`
+  - **macOS**: `~/Library/Application Support/autoPassTryUnzip/passwords.json`
+  - **Linux**: `~/.local/share/autoPassTryUnzip/passwords.json`
 
 ## Third-Party Software
 

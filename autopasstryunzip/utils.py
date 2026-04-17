@@ -1,5 +1,7 @@
 """Custom exceptions and helper functions for the application."""
 
+import os
+import sys
 from pathlib import Path
 
 
@@ -31,6 +33,34 @@ class PasswordNotFoundError(ExtractionError):
     """Exception raised when no matching password is found."""
 
     pass
+
+
+def get_user_data_dir() -> Path:
+    """Get the platform-specific user data directory.
+
+    Returns:
+        Path to the user data directory for storing passwords and settings.
+        Windows: %APPDATA%\\autoPassTryUnzip
+        Linux/macOS: ~/.local/share/autoPassTryUnzip
+    """
+    if sys.platform == "win32":
+        app_data = os.environ.get("APPDATA")
+        if app_data:
+            return Path(app_data) / "autoPassTryUnzip"
+        return Path.home() / "AppData" / "Roaming" / "autoPassTryUnzip"
+    elif sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "autoPassTryUnzip"
+    else:
+        return Path.home() / ".local" / "share" / "autoPassTryUnzip"
+
+
+def get_package_root() -> Path:
+    """Get the package root directory.
+
+    Returns:
+        Path to the autopasstryunzip package directory.
+    """
+    return Path(__file__).parent
 
 
 def validate_archive_path(archive_path: Path) -> Path:

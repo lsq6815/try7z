@@ -4,10 +4,11 @@ import platform
 import subprocess
 from pathlib import Path
 
-from src.utils import (
+from autopasstryunzip.utils import (
     ExtractionError,
     InvalidArchiveError,
     PasswordNotFoundError,
+    get_package_root,
     is_supported_archive,
     validate_archive_path,
 )
@@ -19,19 +20,19 @@ def get_7z_path() -> Path:
     Returns:
         Path to 7z.exe (Windows) or 7zz (Linux/macOS).
     """
-    project_root = Path(__file__).parent.parent
+    package_root = get_package_root()
 
     system = platform.system().lower()
     machine = platform.machine().lower()
 
     if system == "windows":
         if machine in ("amd64", "x86_64"):
-            return project_root / "lib" / "win-x64" / "7z.exe"
+            return package_root / "lib" / "win-x64" / "7z.exe"
     elif system == "linux":
         if machine in ("amd64", "x86_64"):
-            return project_root / "lib" / "linux-x64" / "7zz"
+            return package_root / "lib" / "linux-x64" / "7zz"
     elif system == "darwin":
-        return project_root / "lib" / "mac-x64" / "7zz"
+        return package_root / "lib" / "mac-x64" / "7zz"
 
     raise ExtractionError(f"Unsupported platform: {system} {machine}")
 

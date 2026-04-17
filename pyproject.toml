@@ -1,9 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "autoPassTryUnzip"
+name = "autopasstryunzip"
 version = "0.1.0"
 description = "A 7-Zip frontend for auto-extracting password-protected archives"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [{ name = "Author" }]
+keywords = ["archive", "7z", "zip", "rar", "password", "extract"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Archiving",
+]
+
+[project.scripts]
+autopass-unzip = "autopasstryunzip.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["autopasstryunzip*"]
+
+[tool.setuptools.package-data]
+autopasstryunzip = ["lib/**/*"]
 
 [tool.ruff]
 line-length = 100

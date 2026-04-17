@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from src.utils import PasswordManagerError
+from autopasstryunzip.utils import PasswordManagerError, get_user_data_dir
 
 
 class PasswordManager:
@@ -14,9 +14,9 @@ class PasswordManager:
 
         Args:
             data_dir: Directory for storing passwords.
-                     Defaults to 'data/' in project root.
+                     Defaults to the platform-specific user data directory.
         """
-        self.data_dir = data_dir or Path(__file__).parent.parent / "data"
+        self.data_dir = data_dir or get_user_data_dir()
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.passwords_file = self.data_dir / "passwords.json"

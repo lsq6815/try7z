@@ -13,10 +13,10 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 ## Tech Stack
 
 - **Language**: Python 3.10+
-- **Archive Backend**: Bundled 7-Zip executable (lib/win-x64/7z.exe)
-- **Password Storage**: JSON file (plain text)
-- **Interface**: CLI
-- **Platform**: Windows x64 only
+- **Archive Backend**: Bundled 7-Zip executable (`autopasstryunzip/lib/win-x64/7z.exe`)
+- **Password Storage**: JSON file in user data directory (`%APPDATA%/autoPassTryUnzip/data/passwords.json` on Windows)
+- **Interface**: CLI (command: `autopass-unzip`)
+- **Platform**: Windows x64 only (Linux/macOS support prepared)
 
 ## Supported Formats
 
@@ -28,26 +28,24 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 
 ```
 autoPassTryUnzip/
-├── lib/
-│   └── win-x64/
-│       └── 7z.exe            # Bundled 7-Zip executable
-├── src/
+├── autopasstryunzip/          # Main Python package
 │   ├── __init__.py
-│   ├── main.py              # CLI entry point
-│   ├── password_manager.py  # Password storage and management
-│   ├── extractor.py         # 7-Zip extraction logic
-│   └── utils.py             # Custom exceptions and helpers
+│   ├── __main__.py            # Entry point for `python -m autopasstryunzip`
+│   ├── main.py                # CLI entry point with argparse
+│   ├── password_manager.py    # Password storage and management
+│   ├── extractor.py           # 7-Zip extraction logic
+│   ├── utils.py               # Custom exceptions and helpers
+│   └── lib/
+│       └── win-x64/
+│           └── 7z.exe         # Bundled 7-Zip executable
 ├── tests/
 │   ├── __init__.py
 │   ├── test_password_manager.py
 │   └── test_extractor.py
-├── config/
-│   └── settings.json
-├── data/
-│   └── passwords.json       # User saved passwords
+├── pyproject.toml             # Package configuration
+├── MANIFEST.in                # Package data includes
 ├── requirements.txt
 ├── requirements-dev.txt
-├── pyproject.toml
 ├── README.md
 └── AGENTS.md
 ```
@@ -71,17 +69,23 @@ Example:
 import subprocess
 from pathlib import Path
 
-from src.utils import ExtractionError
+from autopasstryunzip.utils import ExtractionError
 ```
 
 ### Error Handling
-- Use custom exceptions from `src.utils`:
+- Use custom exceptions from `autopasstryunzip.utils`:
   - `AutoPassError` - base exception
   - `PasswordManagerError` - password management errors
   - `ExtractionError` - extraction errors
   - `InvalidArchiveError` - invalid archive errors
   - `PasswordNotFoundError` - no matching password
 - Provide meaningful error messages to users
+
+### Platform Paths
+
+Use helper functions from `utils.py`:
+- `get_user_data_dir()` - Platform-specific user data directory for passwords
+- `get_package_root()` - Package directory (contains bundled 7z.exe)
 
 ### Testing
 - Use pytest as the testing framework
@@ -93,11 +97,19 @@ from src.utils import ExtractionError
 - Production: None (uses bundled 7-Zip)
 - Development: `pytest`, `ruff`, `mypy`
 
+## Installation
+
+```bash
+pip install .
+```
+
+After installation, the `autopass-unzip` CLI command is available globally.
+
 ## Commands
 
-### Run Application
+### Run Application (Installed)
 ```bash
-python -m src.main <command> [options]
+autopass-unzip <command> [options]
 
 # Commands:
 #   add <password>     Add a password
@@ -105,6 +117,11 @@ python -m src.main <command> [options]
 #   list               List stored passwords
 #   clear [-f]         Clear all passwords
 #   extract <archive>  Extract an archive
+```
+
+### Run Application (Development)
+```bash
+python -m autopasstryunzip <command> [options]
 ```
 
 ### Run Tests
@@ -119,7 +136,12 @@ ruff check .
 
 ### Run Type Checking
 ```bash
-mypy src/
+mypy autopasstryunzip/
+```
+
+### Build Package
+```bash
+python -m build
 ```
 
 ## AI Agent Instructions
@@ -143,6 +165,5 @@ mypy src/
 ## Notes
 
 - Supports `.7z`, `.zip`, `.rar` formats via bundled 7-Zip
-- Passwords are stored in plain text in `data/passwords.json`
-- The `data/passwords.json` file is excluded from git via `.gitignore`
+- Passwords are stored in plain text in the user data directory (platform-specific)
 - 7-Zip is licensed under GNU LGPL (see README.md for details)
