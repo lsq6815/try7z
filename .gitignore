@@ -51,8 +51,6 @@ dmypy.json
 .ruff_cache/
 
 # Project Specific
-data/passwords.json
-config/settings.json
 *.log
 
 # OS
