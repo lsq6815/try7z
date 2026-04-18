@@ -14,7 +14,7 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 
 - **Language**: Python 3.10+
 - **Archive Backend**: Bundled 7-Zip executable (`autopasstryunzip/lib/win-x64/7z.exe`)
-- **Password Storage**: JSON file in user data directory (`%APPDATA%/autoPassTryUnzip/data/passwords.json` on Windows)
+- **Password Storage**: JSON file in user data directory (`%APPDATA%/autoPassTryUnzip/passwords.json` on Windows)
 - **Interface**: CLI (command: `autopass-unzip`)
 - **Platform**: Windows x64 only (Linux/macOS support prepared)
 
@@ -40,6 +40,7 @@ autoPassTryUnzip/
 │           └── 7z.exe         # Bundled 7-Zip executable
 ├── tests/
 │   ├── __init__.py
+│   ├── test_cli.py
 │   ├── test_password_manager.py
 │   └── test_extractor.py
 ├── pyproject.toml             # Package configuration
@@ -110,6 +111,10 @@ After installation, the `autopass-unzip` CLI command is available globally.
 ### Run Application (Installed)
 ```bash
 autopass-unzip <command> [options]
+
+# Global Options:
+#   -h, --help                            Show help message and exit
+#   -v, --version                         Show version information and exit
 
 # Commands:
 #   add <password> [<password> ...]       Add password(s)

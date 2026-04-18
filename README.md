@@ -41,6 +41,9 @@ After installation, use the `autopass-unzip` command:
 ### Password Management
 
 ```bash
+# Show version information
+autopass-unzip -v
+
 # Add password(s)
 autopass-unzip add "my_password"
 autopass-unzip add "pwd1" "pwd2" "pwd3"  # Add multiple at once
@@ -114,22 +117,27 @@ mypy autopasstryunzip/
 
 ```
 autoPassTryUnzip/
-├── autopasstryunzip/         # Main package
+├── autopasstryunzip/          # Main Python package
 │   ├── __init__.py
-│   ├── __main__.py          # Module entry point
-│   ├── main.py              # CLI entry point
-│   ├── password_manager.py  # Password storage and management
-│   ├── extractor.py         # Archive extraction logic
-│   ├── utils.py             # Custom exceptions and helpers
+│   ├── __main__.py            # Entry point for `python -m autopasstryunzip`
+│   ├── main.py                # CLI entry point with argparse
+│   ├── password_manager.py    # Password storage and management
+│   ├── extractor.py           # 7-Zip extraction logic
+│   ├── utils.py               # Custom exceptions and helpers
 │   └── lib/
 │       └── win-x64/
-│           └── 7z.exe       # Bundled 7-Zip executable
+│           └── 7z.exe         # Bundled 7-Zip executable
 ├── tests/
+│   ├── __init__.py
+│   ├── test_cli.py
 │   ├── test_password_manager.py
 │   └── test_extractor.py
-├── pyproject.toml           # Package configuration
-├── MANIFEST.in              # Package data includes
-└── README.md
+├── pyproject.toml             # Package configuration
+├── MANIFEST.in                # Package data includes
+├── requirements.txt
+├── requirements-dev.txt
+├── README.md
+└── AGENTS.md
 ```
 
 ## Storage
