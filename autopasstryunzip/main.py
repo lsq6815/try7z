@@ -416,13 +416,37 @@ def cmd_extract(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
+    # Determine output directory
+    if args.output:
+        output_dir = Path(args.output)
+    else:
+        output_dir = archive_path.parent / archive_path.stem
+    output_dir = output_dir.resolve()
+
+    # Check if output directory exists
+    if output_dir.exists() and not args.force:
+        item_type = "directory" if output_dir.is_dir() else "file"
+        confirm = input(
+            f"Output {item_type} '{output_dir.name}' already exists. "
+            f"Overwrite? [y/N]: "
+        )
+        if confirm.lower() != "y":
+            print("Extraction cancelled.")
+            return 1
+
+        # Remove existing directory/file
+        import shutil
+
+        if output_dir.is_dir():
+            shutil.rmtree(output_dir)
+        else:
+            output_dir.unlink()
+
     manager = PasswordManager()
     passwords = manager.get_passwords()
 
     if args.password:
         passwords = [args.password] + passwords
-
-    output_dir = Path(args.output) if args.output else None
 
     print(f"Attempting to extract: {archive_path.name}")
     print(f"Trying {len(passwords)} password(s)...")
@@ -526,6 +550,12 @@ def main() -> int:
     extract_parser.add_argument("archive", help="Path to archive file")
     extract_parser.add_argument("-o", "--output", help="Output directory")
     extract_parser.add_argument("-p", "--password", help="Additional password to try first")
+    extract_parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Overwrite output directory without confirmation",
+    )
     extract_parser.set_defaults(func=cmd_extract)
 
     args = parser.parse_args()
