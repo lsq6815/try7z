@@ -24,7 +24,7 @@ Example:
         ... )
         >>> if success:
         ...     print(f"Extracted with password: {password}")
-        ... else:
+        ...     else:
         ...     print("No password worked")
 
     Extraction with custom output directory::
@@ -37,6 +37,7 @@ Example:
 """
 
 import platform
+import re
 import subprocess
 from pathlib import Path
 
@@ -177,10 +178,43 @@ class Extractor:
 
         self._7z_path = get_7z_path()
 
+    def _get_archive_file_count(self) -> int | None:
+        """Get the number of files in the archive.
+
+        Uses 7-Zip's list command to count files in the archive.
+        This is used for progress bar total calculation.
+
+        Returns:
+            Number of files in the archive, or None if count cannot be determined.
+
+        Example:
+            >>> from pathlib import Path
+            >>> extractor = Extractor(Path("test.7z"))
+            >>> count = extractor._get_archive_file_count()
+        """
+        try:
+            result = subprocess.run(
+                [str(self._7z_path), "l", str(self.archive_path)],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if result.returncode == 0:
+                # Parse the "Files:" line from the output
+                for line in result.stdout.split("\n"):
+                    if line.strip().startswith("Files:"):
+                        match = re.search(r"Files:\s*(\d+)", line)
+                        if match:
+                            return int(match.group(1))
+        except Exception:
+            pass
+        return None
+
     def try_extract(
         self,
         output_dir: Path | None = None,
         passwords: list[str] | None = None,
+        show_progress: bool = False,
     ) -> tuple[bool, str | None]:
         """Attempt to extract archive with given passwords.
 
@@ -194,6 +228,8 @@ class Extractor:
                        archive's parent directory.
             passwords: List of passwords to try. If None or empty,
                       attempts extraction without a password.
+            show_progress: Whether to display a progress bar during extraction.
+                          Only shown when a correct password is found.
 
         Returns:
             Tuple of (success, used_password):
@@ -240,16 +276,48 @@ class Extractor:
         used_password = None
 
         try:
-            for password in passwords_to_try:
-                try:
-                    success = self._extract_with_password(output_dir, password)
+            if show_progress:
+                # Two-phase extraction with progress bar:
+                # Phase 1: Find correct password without showing progress
+                correct_password = None
+                for password in passwords_to_try:
+                    try:
+                        if self._extract_with_password(output_dir, password, show_progress=False):
+                            correct_password = password
+                            break
+                    except ExtractionError:
+                        raise
+                    except Exception:
+                        continue
+
+                # Phase 2: If found and progress requested, re-extract with progress
+                if correct_password is not None:
+                    # Remove the output dir to re-extract cleanly
+                    if output_dir.exists():
+                        import shutil
+                        shutil.rmtree(output_dir)
+                    output_dir.mkdir(parents=True, exist_ok=True)
+
+                    success = self._extract_with_password(
+                        output_dir, correct_password, show_progress=True
+                    )
                     if success:
-                        used_password = password
-                        return True, password
-                except ExtractionError:
-                    raise
-                except Exception:
-                    continue
+                        used_password = correct_password
+                        return True, correct_password
+            else:
+                # Original behavior: try passwords without progress bar
+                for password in passwords_to_try:
+                    try:
+                        success = self._extract_with_password(
+                            output_dir, password, show_progress=False
+                        )
+                        if success:
+                            used_password = password
+                            return True, password
+                    except ExtractionError:
+                        raise
+                    except Exception:
+                        continue
         finally:
             if not success and created_by_us and output_dir.exists():
                 try:
@@ -260,7 +328,12 @@ class Extractor:
 
         return success, used_password
 
-    def _extract_with_password(self, output_dir: Path, password: str | None) -> bool:
+    def _extract_with_password(
+        self,
+        output_dir: Path,
+        password: str | None,
+        show_progress: bool = False,
+    ) -> bool:
         """Extract archive with a specific password.
 
         Internal method that executes 7-Zip with the given password.
@@ -270,6 +343,7 @@ class Extractor:
         Args:
             output_dir: Directory to extract files to.
             password: Password to use, or None for no password.
+            show_progress: Whether to display a progress bar during extraction.
 
         Returns:
             True if extraction succeeded, False if password was incorrect.
@@ -287,33 +361,174 @@ class Extractor:
         if password:
             cmd.insert(3, f"-p{password}")
 
+        if not show_progress:
+            # Fast mode without progress bar
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+
+                if result.returncode == 0:
+                    return True
+
+                error_output = result.stderr.lower() + result.stdout.lower()
+
+                if "wrong password" in error_output or "password" in error_output:
+                    return False
+
+                raise ExtractionError(f"Extraction failed: {result.stderr or result.stdout}")
+
+            except subprocess.TimeoutExpired:
+                raise ExtractionError("Extraction timed out")
+            except FileNotFoundError:
+                raise ExtractionError(f"7-Zip executable not found: {self._7z_path}")
+        else:
+            # Progress bar mode
+            return self._extract_with_progress(cmd)
+
+    def _extract_with_progress(self, cmd: list[str]) -> bool:
+        """Extract archive with progress bar display.
+
+        Uses 7-Zip's -bsp1 flag to output progress information,
+        which is parsed in real-time to update a tqdm progress bar.
+
+        7-Zip uses \\r (carriage return) to refresh progress on the same line,
+        so this method handles raw byte output to properly capture progress.
+
+        The progress bar is only displayed when actual extraction progress
+        is detected (progress increases from 0% to higher values).
+
+        Args:
+            cmd: 7-Zip command list (will add -bsp1 flag).
+
+        Returns:
+            True if extraction succeeded, False if password was incorrect.
+
+        Raises:
+            ExtractionError: If extraction fails for non-password reasons.
+        """
+        from tqdm import tqdm
+
+        # Add -bsp1 to send progress to stdout
+        cmd_with_progress = cmd + ["-bsp1"]
+
+        # Regex to match 7-Zip progress: " 10%"
+        progress_pattern = re.compile(r"^\s*(\d+)%")
+
+        # Get total file count for the progress bar
+        total_files = self._get_archive_file_count()
+
+        pbar = None
+        progress_detected = False
+        max_percent = 0
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300,
+            process = subprocess.Popen(
+                cmd_with_progress,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=0,
             )
 
-            if result.returncode == 0:
+            # Read raw bytes to handle \\r properly
+            full_output = b""
+            current_line = b""
+
+            if process.stdout is not None:
+                while True:
+                    byte = process.stdout.read(1)
+                    if not byte:
+                        break
+
+                    full_output += byte
+
+                    if byte == b"\r":
+                        # Carriage return - current line is refreshed
+                        line_str = current_line.decode("utf-8", errors="replace")
+
+                        # Check for progress pattern (e.g., " 10%")
+                        match = progress_pattern.match(line_str)
+                        if match:
+                            percent = int(match.group(1))
+
+                            # Track max percent to detect real progress
+                            if percent > max_percent:
+                                max_percent = percent
+                                progress_detected = True
+
+                            # Only create progress bar if we've seen real progress
+                            # (progress > 0 or we've been processing for a while)
+                            if progress_detected and pbar is None:
+                                pbar = tqdm(
+                                    total=100,
+                                    desc="Extracting",
+                                    unit="%",
+                                    ncols=80,
+                                    bar_format="{desc}: {percentage:3.0f}%|{bar}| "
+                                              "{n_fmt}/{total_fmt}",
+                                )
+
+                            # Update progress bar if it exists
+                            if pbar is not None:
+                                pbar.n = percent
+                                if total_files is not None:
+                                    pbar.set_postfix(count=f"{percent}% of {total_files} files")
+                                pbar.update(0)  # Refresh display
+
+                        # Reset current line (\\r means overwrite)
+                        current_line = b""
+                    elif byte == b"\n":
+                        # New line - keep the line for later analysis
+                        current_line = b""
+                    else:
+                        current_line += byte
+
+            # Wait for process to complete and get stderr
+            _, stderr_bytes = process.communicate(timeout=300)
+            stderr = stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
+
+            # Close progress bar only if extraction succeeded
+            # If failed (wrong password), clear the partial progress display
+            if pbar is not None:
+                if process.returncode == 0:
+                    pbar.close()
+                else:
+                    # Clear the progress bar line for failed extractions
+                    pbar.clear()
+                    pbar.close()
+
+            # Decode full output for error analysis
+            full_output_str = full_output.decode("utf-8", errors="replace")
+
+            # Determine result
+            if process.returncode == 0:
                 return True
 
-            error_output = result.stderr.lower() + result.stdout.lower()
-
-            if "wrong password" in error_output or "password" in error_output:
+            # Check for password error
+            all_output = (full_output_str + stderr).lower()
+            if "wrong password" in all_output or "password" in all_output:
                 return False
 
-            raise ExtractionError(f"Extraction failed: {result.stderr or result.stdout}")
+            raise ExtractionError(f"Extraction failed: {stderr or full_output_str[-500:]}")
 
         except subprocess.TimeoutExpired:
+            if pbar is not None:
+                pbar.clear()
+                pbar.close()
             raise ExtractionError("Extraction timed out")
         except FileNotFoundError:
+            if pbar is not None:
+                pbar.clear()
+                pbar.close()
             raise ExtractionError(f"7-Zip executable not found: {self._7z_path}")
 
     def extract_with_passwords(
         self,
         passwords: list[str],
         output_dir: Path | None = None,
+        show_progress: bool = False,
     ) -> tuple[bool, str | None]:
         """Extract archive trying multiple passwords, raising on failure.
 
@@ -325,6 +540,7 @@ class Extractor:
             passwords: List of passwords to try. Must not be empty.
             output_dir: Directory to extract to. If None, creates a
                        subdirectory named after the archive.
+            show_progress: Whether to display a progress bar during extraction.
 
         Returns:
             Tuple of (success, used_password). Success is always True
@@ -351,7 +567,7 @@ class Extractor:
             ... except PasswordNotFoundError:
             ...     print("Password not in list")
         """
-        success, used_password = self.try_extract(output_dir, passwords)
+        success, used_password = self.try_extract(output_dir, passwords, show_progress)
 
         if not success and passwords:
             raise PasswordNotFoundError(f"No matching password found for {self.archive_path.name}")

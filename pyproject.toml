@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "A 7-Zip frontend for auto-extracting password-protected archives"
 readme = "README.md"
 requires-python = ">=3.10"
+dependencies = ["tqdm>=4.65.0"]
 authors = [{ name = "Author" }]
 keywords = ["archive", "7z", "zip", "rar", "password", "extract"]
 classifiers = [

@@ -1,2 +1,1 @@
-# No Python dependencies required
-# Uses bundled 7-Zip executable (lib/win-x64/7z.exe)
+tqdm>=4.65.0

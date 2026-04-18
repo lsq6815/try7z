@@ -428,7 +428,9 @@ def cmd_extract(args: argparse.Namespace) -> int:
     print(f"Trying {len(passwords)} password(s)...")
 
     try:
-        success, used_password = extractor.extract_with_passwords(passwords, output_dir)
+        success, used_password = extractor.extract_with_passwords(
+            passwords, output_dir, show_progress=True
+        )
 
         if success:
             if used_password:
