@@ -130,6 +130,7 @@ class TestExtractor:
 
         assert success is True
         assert used_password == "secret123"
+        assert (output_dir / "src" / "test.txt").exists()
 
     def test_extract_wrong_password_raises(
         self, encrypted_7z_archive: Path, temp_dir: Path
@@ -173,3 +174,117 @@ class TestExtractor:
 
         assert success is True
         assert used_password == "zipsecret"
+        assert (output_dir / "src" / "test.txt").exists()
+
+    @pytest.mark.parametrize(
+        "passwords,expected_password",
+        [
+            (["secret123", "wrong1", "wrong2"], "secret123"),
+            (["wrong1", "secret123", "wrong2"], "secret123"),
+            (["wrong1", "wrong2", "secret123"], "secret123"),
+        ],
+    )
+    def test_extract_encrypted_7z_password_positions(
+        self,
+        encrypted_7z_archive: Path,
+        temp_dir: Path,
+        passwords: list[str],
+        expected_password: str,
+    ) -> None:
+        """Test extracting encrypted 7z with password at various positions."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(output_dir, passwords)
+
+        assert success is True
+        assert used_password == expected_password
+        assert (output_dir / "src" / "test.txt").exists()
+
+    @pytest.mark.parametrize(
+        "passwords,expected_password",
+        [
+            (["zipsecret", "wrong1", "wrong2"], "zipsecret"),
+            (["wrong1", "zipsecret", "wrong2"], "zipsecret"),
+            (["wrong1", "wrong2", "zipsecret"], "zipsecret"),
+        ],
+    )
+    def test_extract_encrypted_zip_password_positions(
+        self,
+        encrypted_zip_archive: Path,
+        temp_dir: Path,
+        passwords: list[str],
+        expected_password: str,
+    ) -> None:
+        """Test extracting encrypted zip with password at various positions."""
+        extractor = Extractor(encrypted_zip_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(output_dir, passwords)
+
+        assert success is True
+        assert used_password == expected_password
+        assert (output_dir / "src" / "test.txt").exists()
+
+    def test_extract_encrypted_7z_password_not_in_list(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted 7z when password is not in list."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+        wrong_passwords = ["wrong1", "wrong2", "wrong3"]
+
+        success, used_password = extractor.try_extract(output_dir, wrong_passwords)
+
+        assert success is False
+        assert used_password is None
+
+    def test_extract_encrypted_zip_password_not_in_list(
+        self, encrypted_zip_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted zip when password is not in list."""
+        extractor = Extractor(encrypted_zip_archive)
+        output_dir = temp_dir / "output"
+        wrong_passwords = ["wrong1", "wrong2", "wrong3"]
+
+        success, used_password = extractor.try_extract(output_dir, wrong_passwords)
+
+        assert success is False
+        assert used_password is None
+
+    def test_extract_encrypted_7z_single_correct_password(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted 7z with single correct password."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(output_dir, ["secret123"])
+
+        assert success is True
+        assert used_password == "secret123"
+        assert (output_dir / "src" / "test.txt").exists()
+
+    def test_extract_encrypted_7z_single_wrong_password(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted 7z with single wrong password."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(output_dir, ["wrongpassword"])
+
+        assert success is False
+        assert used_password is None
+
+    def test_extract_encrypted_zip_single_wrong_password(
+        self, encrypted_zip_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting encrypted zip with single wrong password."""
+        extractor = Extractor(encrypted_zip_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(output_dir, ["wrongpassword"])
+
+        assert success is False
+        assert used_password is None
