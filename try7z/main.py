@@ -46,6 +46,7 @@ Example:
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from collections.abc import Callable
@@ -330,7 +331,10 @@ def cmd_show_path(
     return 0
 
 
-def cmd_edit_passwords(args: argparse.Namespace) -> int:
+def cmd_edit_passwords(
+    args: argparse.Namespace,
+    manager: PasswordManager | None = None,
+) -> int:
     """Open passwords file in the default system editor.
 
     Opens the passwords.json file using the system's default
@@ -338,6 +342,8 @@ def cmd_edit_passwords(args: argparse.Namespace) -> int:
 
     Args:
         args: Parsed command line arguments (no specific attributes used).
+        manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
         Exit code (0 on success, 1 on error).
@@ -353,7 +359,8 @@ def cmd_edit_passwords(args: argparse.Namespace) -> int:
         >>> cmd_edit_passwords(args)
         0
     """
-    manager = PasswordManager()
+    if manager is None:
+        manager = PasswordManager()
     passwords_file = str(manager.passwords_file)
 
     # Ensure file exists
@@ -373,7 +380,10 @@ def cmd_edit_passwords(args: argparse.Namespace) -> int:
         return 1
 
 
-def cmd_extract(args: argparse.Namespace) -> int:
+def cmd_extract(
+    args: argparse.Namespace,
+    manager: PasswordManager | None = None,
+) -> int:
     """Extract an archive using stored passwords.
 
     Extracts a password-protected archive by trying all stored
@@ -385,6 +395,8 @@ def cmd_extract(args: argparse.Namespace) -> int:
             - archive: Path to the archive file
             - output: Optional output directory path
             - password: Optional additional password to try first
+        manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
         Exit code (0 on success, 1 on error).
@@ -435,14 +447,13 @@ def cmd_extract(args: argparse.Namespace) -> int:
             return 1
 
         # Remove existing directory/file
-        import shutil
-
         if output_dir.is_dir():
             shutil.rmtree(output_dir)
         else:
             output_dir.unlink()
 
-    manager = PasswordManager()
+    if manager is None:
+        manager = PasswordManager()
     passwords = manager.get_passwords()
 
     if args.password:
@@ -462,10 +473,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
             else:
                 print("Success! Archive was not password-protected.")
 
-            if output_dir:
-                print(f"Extracted to: {output_dir}")
-            else:
-                print(f"Extracted to: {archive_path.parent / archive_path.stem}")
+            print(f"Extracted to: {output_dir}")
 
             return 0
         else:

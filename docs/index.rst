@@ -17,7 +17,8 @@ Features
 * **Automatic Extraction**: Try multiple passwords automatically until one works
 * **Multiple Formats**: Support for ``.7z``, ``.zip``, and ``.rar`` archives
 * **Bundled 7-Zip**: No external dependencies - 7-Zip executable is included
-* **Cross-Platform**: Works on Windows, Linux, and macOS (x64)
+* **Cross-Platform**: Windows x64 ready; Linux and macOS paths prepared
+  (requires placing the appropriate ``7zz`` binary manually)
 
 Quick Start
 -----------

@@ -9,8 +9,9 @@ Supported Formats:
     - .zip (ZIP archive)
     - .rar (RAR archive)
 
-The module automatically locates the appropriate 7-Zip binary for the
-current platform (Windows x64, Linux x64, macOS x64).
+The module locates the bundled 7-Zip binary for the current platform.
+Windows x64 is fully supported; Linux and macOS require manual placement
+of the 7zz binary in the appropriate lib/ subdirectory.
 
 Example:
     Basic extraction with password list::
@@ -285,6 +286,7 @@ class Extractor:
                 # Two-phase extraction with progress bar:
                 # Phase 1: Find correct password without showing progress
                 correct_password = None
+                found_success = False
                 total_passwords = len(passwords_to_try)
 
                 for i, password in enumerate(passwords_to_try):
@@ -297,6 +299,7 @@ class Extractor:
                     try:
                         if self._extract_with_password(output_dir, password, show_progress=False):
                             correct_password = password
+                            found_success = True
                             break
                     except ExtractionError:
                         raise
@@ -304,7 +307,7 @@ class Extractor:
                         continue
 
                 # Phase 2: If found and progress requested, re-extract with progress
-                if correct_password is not None:
+                if found_success:
                     # Show how many tries it took to find the password
                     if password_progress_shown:
                         tries_count = i + 1
