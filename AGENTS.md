@@ -43,6 +43,12 @@ autoPassTryUnzip/
 │   ├── test_cli.py
 │   ├── test_password_manager.py
 │   └── test_extractor.py
+├── docs/                      # Sphinx documentation
+│   ├── conf.py                # Sphinx configuration
+│   ├── index.rst              # Documentation homepage
+│   ├── modules.rst            # API module index
+│   ├── Makefile               # Build commands
+│   └── _static/               # Static assets
 ├── pyproject.toml             # Package configuration
 ├── MANIFEST.in                # Package data includes
 ├── requirements.txt
@@ -96,7 +102,13 @@ Use helper functions from `utils.py`:
 
 ### Dependencies
 - Production: None (uses bundled 7-Zip)
-- Development: `pytest`, `ruff`, `mypy`
+- Development: `pytest`, `ruff`, `mypy`, `sphinx`, `sphinx-rtd-theme`, `sphinx-autodoc-typehints`
+
+### Documentation
+- All public modules, classes, and functions must have Google-style docstrings
+- Docstrings are used to auto-generate API documentation via Sphinx
+- Keep docstrings up-to-date when modifying function signatures or behavior
+- Use type hints - they are automatically included in the documentation
 
 ## Installation
 
@@ -150,6 +162,19 @@ mypy autopasstryunzip/
 ```bash
 python -m build
 ```
+
+### Build Documentation
+```bash
+# Generate HTML documentation (output: docs/_build/html/)
+sphinx-build -b html docs docs/_build/html
+
+# Or use the Makefile
+cd docs
+make html
+```
+
+### View Documentation
+Open `docs/_build/html/index.html` in a web browser after building.
 
 ## AI Agent Instructions
 

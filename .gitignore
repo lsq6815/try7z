@@ -50,6 +50,9 @@ dmypy.json
 # Linting
 .ruff_cache/
 
+# Documentation build output
+docs/_build/
+
 # Project Specific
 *.log
 

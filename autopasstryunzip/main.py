@@ -1,4 +1,48 @@
-"""CLI entry point for AutoPassTryUnzip."""
+"""CLI entry point and command handlers for AutoPassTryUnzip.
+
+This module provides the command-line interface for managing passwords
+and extracting archives. It uses argparse for command parsing and
+dispatches to appropriate handler functions.
+
+Commands:
+    add: Add one or more passwords to the stored list
+    remove: Remove passwords by value or index
+    list: Display all stored passwords with indices
+    clear: Remove all stored passwords
+    path: Show the location of the passwords file
+    edit: Open the passwords file in the default editor
+    extract: Extract an archive using stored passwords
+
+Usage:
+    Basic command structure::
+
+        $ autopass-unzip <command> [options]
+
+    Examples::
+
+        $ autopass-unzip add "mypassword"
+        $ autopass-unzip add "pwd1" "pwd2" "pwd3"
+        $ autopass-unzip list
+        $ autopass-unzip remove -i 2 3
+        $ autopass-unzip extract archive.7z -o output_dir
+
+    See individual command help::
+
+        $ autopass-unzip <command> --help
+
+Exit Codes:
+    0: Success
+    1: Error (invalid arguments, operation failed, etc.)
+
+Example:
+    Using argparse.Namespace for testing::
+
+        >>> import argparse
+        >>> from autopasstryunzip.main import cmd_list_passwords
+        >>>
+        >>> args = argparse.Namespace()
+        >>> exit_code = cmd_list_passwords(args)
+"""
 
 import argparse
 import os
@@ -17,14 +61,27 @@ def cmd_add_password(
     args: argparse.Namespace,
     manager: PasswordManager | None = None,
 ) -> int:
-    """Add password(s) to the list.
+    """Add password(s) to the stored list.
+
+    Adds one or more passwords to the password manager. Duplicate
+    passwords are skipped with a warning. Reports the number of
+    passwords added and skipped.
 
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments. Expected attributes:
+            - passwords: List of password strings to add
         manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
-        Exit code.
+        Exit code (0 if at least one password was added, 1 otherwise).
+
+    Example:
+        >>> import argparse
+        >>> args = argparse.Namespace()
+        >>> args.passwords = ["secret123", "another_pwd"]
+        >>> cmd_add_password(args)  # Adds both passwords
+        0
     """
     if manager is None:
         manager = PasswordManager()
@@ -54,30 +111,57 @@ def cmd_remove_password(
 ) -> int:
     """Remove password(s) by value or index.
 
+    Removes passwords either by their string value or by their
+    1-based index (as shown by the 'list' command). Cannot use
+    both methods simultaneously.
+
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments. Expected attributes:
+            - password: List of password strings to remove (optional)
+            - index: List of 1-based indices to remove (optional)
         manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
-        Exit code.
+        Exit code (0 on success, 1 on error).
+
+    Raises:
+        Prints error to stderr if both password and index are provided,
+        or if neither is provided.
+
+    Example:
+        Remove by value::
+
+            >>> args = argparse.Namespace()
+            >>> args.password = ["old_password"]
+            >>> args.index = None
+            >>> cmd_remove_password(args)
+            0
+
+        Remove by index::
+
+            >>> args.password = []
+            >>> args.index = [1, 3]  # Removes 1st and 3rd passwords
+            >>> cmd_remove_password(args)
+            0
     """
     if manager is None:
         manager = PasswordManager()
 
-    # 验证：不能同时使用两种方式
+    # Validate: cannot use both methods
     if args.password and args.index:
         print("Error: Cannot use both password value and --index", file=sys.stderr)
         return 1
 
-    # 验证：至少使用一种方式
+    # Validate: must use at least one method
     if not args.password and not args.index:
         print("Error: Please specify password(s) or use --index", file=sys.stderr)
         return 1
 
     try:
         if args.index:
-            # 处理下标删除
-            # 去重并保持输入顺序
+            # Remove by index
+            # Deduplicate while preserving order
             seen = set()
             unique_indices = []
             for idx in args.index:
@@ -85,7 +169,7 @@ def cmd_remove_password(
                     seen.add(idx)
                     unique_indices.append(idx)
 
-            # 转换为 0-based 并排序（从大到小，避免删除后索引变化）
+            # Convert to 0-based and sort (descending to avoid index shifting)
             indices_0based = sorted([i - 1 for i in unique_indices], reverse=True)
 
             removed_count = 0
@@ -97,15 +181,15 @@ def cmd_remove_password(
                     print(f"  Removed [{idx + 1}]: {removed_pw}")
                     removed_count += 1
                 except AutoPassError:
-                    failed_indices.append(idx + 1)  # 记录 1-based 用于警告
+                    failed_indices.append(idx + 1)  # Record 1-based for warning
 
-            # 报告警告（按原始顺序）
+            # Report warnings in original order
             for idx in sorted(failed_indices):
                 print(f"Warning: Index {idx} out of range", file=sys.stderr)
 
             print(f"Removed {removed_count} password(s). Total: {manager.count()}")
         else:
-            # 按密码值删除（支持多个）
+            # Remove by password value
             removed_count = 0
             failed_passwords = []
 
@@ -117,7 +201,7 @@ def cmd_remove_password(
                 except AutoPassError:
                     failed_passwords.append(password)
 
-            # 报告警告
+            # Report warnings
             for password in failed_passwords:
                 print(f"Warning: Password '{password}' not found", file=sys.stderr)
 
@@ -134,14 +218,27 @@ def cmd_list_passwords(
     args: argparse.Namespace,
     manager: PasswordManager | None = None,
 ) -> int:
-    """List all stored passwords.
+    """List all stored passwords with 1-based indices.
+
+    Displays all stored passwords with their indices. The indices
+    can be used with the 'remove -i' command.
 
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments (no specific attributes used).
         manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
-        Exit code.
+        Exit code (always 0).
+
+    Example:
+        >>> args = argparse.Namespace()
+        >>> cmd_list_passwords(args)
+        Stored passwords (3):
+          1. password_one
+          2. password_two
+          3. password_three
+        0
     """
     if manager is None:
         manager = PasswordManager()
@@ -164,12 +261,32 @@ def cmd_clear_passwords(
 ) -> int:
     """Clear all stored passwords.
 
+    Removes all passwords from storage. By default, prompts for
+    confirmation unless the -f/--force flag is used.
+
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments. Expected attributes:
+            - force: Boolean indicating whether to skip confirmation
         manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
-        Exit code.
+        Exit code (always 0).
+
+    Example:
+        With confirmation (user must type 'y')::
+
+            >>> args = argparse.Namespace()
+            >>> args.force = False
+            >>> cmd_clear_passwords(args)
+            Clear all passwords? [y/N]:
+
+        Without confirmation::
+
+            >>> args.force = True
+            >>> cmd_clear_passwords(args)
+            All passwords cleared.
+            0
     """
     if not args.force:
         confirm = input("Clear all passwords? [y/N]: ")
@@ -188,14 +305,24 @@ def cmd_show_path(
     args: argparse.Namespace,
     manager: PasswordManager | None = None,
 ) -> int:
-    """Show passwords file path.
+    """Show the passwords file path.
+
+    Displays the full path to the passwords.json file where
+    passwords are stored.
 
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments (no specific attributes used).
         manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
 
     Returns:
-        Exit code.
+        Exit code (always 0).
+
+    Example:
+        >>> args = argparse.Namespace()
+        >>> cmd_show_path(args)
+        C:\\Users\\Username\\AppData\\Roaming\\autoPassTryUnzip\\passwords.json
+        0
     """
     if manager is None:
         manager = PasswordManager()
@@ -204,13 +331,27 @@ def cmd_show_path(
 
 
 def cmd_edit_passwords(args: argparse.Namespace) -> int:
-    """Open passwords file in default editor.
+    """Open passwords file in the default system editor.
+
+    Opens the passwords.json file using the system's default
+    application for JSON files. Creates the file if it doesn't exist.
 
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments (no specific attributes used).
 
     Returns:
-        Exit code.
+        Exit code (0 on success, 1 on error).
+
+    Note:
+        Uses platform-specific methods:
+        - Windows: os.startfile()
+        - macOS: open command
+        - Linux: xdg-open command
+
+    Example:
+        >>> args = argparse.Namespace()
+        >>> cmd_edit_passwords(args)
+        0
     """
     manager = PasswordManager()
     passwords_file = str(manager.passwords_file)
@@ -235,11 +376,37 @@ def cmd_edit_passwords(args: argparse.Namespace) -> int:
 def cmd_extract(args: argparse.Namespace) -> int:
     """Extract an archive using stored passwords.
 
+    Extracts a password-protected archive by trying all stored
+    passwords (plus an optional additional password). Reports
+    success or failure to the user.
+
     Args:
-        args: Parsed command line arguments.
+        args: Parsed command line arguments. Expected attributes:
+            - archive: Path to the archive file
+            - output: Optional output directory path
+            - password: Optional additional password to try first
 
     Returns:
-        Exit code.
+        Exit code (0 on success, 1 on error).
+
+    Example:
+        Basic extraction::
+
+            >>> args = argparse.Namespace()
+            >>> args.archive = "secret.7z"
+            >>> args.output = None
+            >>> args.password = None
+            >>> cmd_extract(args)
+            Attempting to extract: secret.7z
+            Trying 5 password(s)...
+            Success! Extracted with password.
+            0
+
+        With custom output and priority password::
+
+            >>> args.output = "./extracted"
+            >>> args.password = "try_this_first"
+            >>> cmd_extract(args)
     """
     archive_path = Path(args.archive)
 
@@ -288,10 +455,21 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    """Main entry point.
+    """Main entry point for the CLI application.
+
+    Parses command-line arguments and dispatches to the appropriate
+    handler function. Supports --version and --help flags.
 
     Returns:
-        Exit code.
+        Exit code from the executed command.
+
+    Example:
+        Command-line usage::
+
+            $ autopass-unzip --version
+            $ autopass-unzip --help
+            $ autopass-unzip add "password"
+            $ autopass-unzip extract archive.7z
     """
     parser = argparse.ArgumentParser(
         prog="autopass-unzip",

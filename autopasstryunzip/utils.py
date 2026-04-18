@@ -1,4 +1,37 @@
-"""Custom exceptions and helper functions for the application."""
+"""Custom exceptions and helper functions for the AutoPassTryUnzip application.
+
+This module provides exception classes for different error scenarios and utility
+functions for path management and archive validation.
+
+Exception Hierarchy:
+
+* AutoPassError (base)
+
+  * PasswordManagerError
+  * ExtractionError
+
+    * InvalidArchiveError
+    * PasswordNotFoundError
+
+Example:
+    Handling different exceptions::
+
+        from autopasstryunzip.utils import (
+            AutoPassError,
+            PasswordManagerError,
+            ExtractionError
+        )
+
+        try:
+            # Some operation
+            pass
+        except PasswordManagerError as e:
+            print(f"Password error: {e}")
+        except ExtractionError as e:
+            print(f"Extraction error: {e}")
+        except AutoPassError as e:
+            print(f"General error: {e}")
+"""
 
 import os
 import sys
@@ -6,31 +39,99 @@ from pathlib import Path
 
 
 class AutoPassError(Exception):
-    """Base exception for AutoPassTryUnzip application."""
+    """Base exception for AutoPassTryUnzip application.
+
+    All custom exceptions in this package inherit from this class.
+    Catch this exception to handle any application-specific errors.
+
+    Example:
+        >>> try:
+        ...     # Some operation
+        ...     pass
+        ... except AutoPassError as e:
+        ...     print(f"Application error: {e}")
+    """
 
     pass
 
 
 class PasswordManagerError(AutoPassError):
-    """Exception raised for password manager errors."""
+    """Exception raised for password management errors.
+
+    This exception is raised when password operations fail, such as:
+    - Adding a duplicate password
+    - Removing a non-existent password
+    - Accessing an invalid password index
+
+    Example:
+        >>> from autopasstryunzip.password_manager import PasswordManager
+        >>> pm = PasswordManager()
+        >>> pm.add_password("test")
+        >>> try:
+        ...     pm.add_password("test")  # Duplicate
+        ... except PasswordManagerError as e:
+        ...     print(e)  # "Password already exists"
+    """
 
     pass
 
 
 class ExtractionError(AutoPassError):
-    """Exception raised for extraction errors."""
+    """Exception raised for archive extraction errors.
+
+    This exception is raised when archive extraction fails for reasons
+    other than incorrect passwords (e.g., corrupted archive, missing
+    7-Zip executable, timeout).
+
+    Example:
+        >>> from autopasstryunzip.extractor import Extractor
+        >>> try:
+        ...     extractor = Extractor("nonexistent.7z")
+        ... except ExtractionError as e:
+        ...     print(f"Extraction failed: {e}")
+    """
 
     pass
 
 
 class InvalidArchiveError(ExtractionError):
-    """Exception raised when archive is invalid or corrupted."""
+    """Exception raised when archive is invalid, corrupted, or unsupported.
+
+    This exception indicates that the archive file cannot be processed
+    due to one of the following reasons:
+    - File does not exist
+    - Path is not a file
+    - File format is not supported (.7z, .zip, .rar only)
+
+    Attributes:
+        message: Explanation of why the archive is invalid.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from autopasstryunzip.extractor import Extractor
+        >>> try:
+        ...     extractor = Extractor(Path("document.txt"))  # Not an archive
+        ... except InvalidArchiveError as e:
+        ...     print(e)  # "Unsupported archive format: .txt"
+    """
 
     pass
 
 
 class PasswordNotFoundError(ExtractionError):
-    """Exception raised when no matching password is found."""
+    """Exception raised when no matching password is found for an archive.
+
+    This exception indicates that all provided passwords were tried
+    but none successfully decrypted the archive.
+
+    Example:
+        >>> from autopasstryunzip.extractor import Extractor
+        >>> extractor = Extractor("encrypted.7z")
+        >>> try:
+        ...     extractor.extract_with_passwords(["wrong1", "wrong2"])
+        ... except PasswordNotFoundError as e:
+        ...     print(e)  # "No matching password found for encrypted.7z"
+    """
 
     pass
 
@@ -38,10 +139,27 @@ class PasswordNotFoundError(ExtractionError):
 def get_user_data_dir() -> Path:
     """Get the platform-specific user data directory.
 
+    Returns the path to the directory where user-specific data
+    (passwords, settings) should be stored. The directory is
+    created in the standard location for each operating system.
+
     Returns:
         Path to the user data directory for storing passwords and settings.
-        Windows: %APPDATA%\\autoPassTryUnzip
-        Linux/macOS: ~/.local/share/autoPassTryUnzip
+        The directory structure follows platform conventions:
+
+        - Windows: ``%APPDATA%\\autoPassTryUnzip``
+        - macOS: ``~/Library/Application Support/autoPassTryUnzip``
+        - Linux: ``~/.local/share/autoPassTryUnzip``
+
+    Example:
+        >>> from autopasstryunzip.utils import get_user_data_dir
+        >>> data_dir = get_user_data_dir()
+        >>> print(data_dir)
+        WindowsPath('C:/Users/Username/AppData/Roaming/autoPassTryUnzip')
+
+    Note:
+        This directory is NOT automatically created by this function.
+        Callers should ensure the directory exists before using it.
     """
     if sys.platform == "win32":
         app_data = os.environ.get("APPDATA")
@@ -57,8 +175,17 @@ def get_user_data_dir() -> Path:
 def get_package_root() -> Path:
     """Get the package root directory.
 
+    Returns the absolute path to the autopasstryunzip package directory.
+    This is useful for locating bundled resources like the 7-Zip executable.
+
     Returns:
         Path to the autopasstryunzip package directory.
+
+    Example:
+        >>> from autopasstryunzip.utils import get_package_root
+        >>> root = get_package_root()
+        >>> print(root)
+        WindowsPath('C:/.../autopasstryunzip')
     """
     return Path(__file__).parent
 
@@ -66,14 +193,28 @@ def get_package_root() -> Path:
 def validate_archive_path(archive_path: Path) -> Path:
     """Validate that the archive path exists and is a file.
 
+    Performs validation checks on the provided archive path:
+    1. Resolves to absolute path
+    2. Verifies file exists
+    3. Verifies path is a file (not a directory)
+
     Args:
-        archive_path: Path to the archive file.
+        archive_path: Path to the archive file. Can be relative or absolute.
 
     Returns:
-        Validated absolute path.
+        Validated absolute path to the archive.
 
     Raises:
         InvalidArchiveError: If path doesn't exist or isn't a file.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from autopasstryunzip.utils import validate_archive_path
+        >>> try:
+        ...     path = validate_archive_path(Path("archive.7z"))
+        ...     print(f"Valid archive: {path}")
+        ... except InvalidArchiveError as e:
+        ...     print(f"Invalid: {e}")
     """
     archive_path = archive_path.resolve()
 
@@ -89,8 +230,20 @@ def validate_archive_path(archive_path: Path) -> Path:
 def get_supported_extensions() -> set[str]:
     """Return set of supported archive extensions.
 
+    Returns the file extensions that can be processed by this application.
+    All extensions are lowercase and include the leading dot.
+
     Returns:
         Set of supported file extensions (lowercase, with dot).
+        Currently supported: .7z, .zip, .rar
+
+    Example:
+        >>> from autopasstryunzip.utils import get_supported_extensions
+        >>> exts = get_supported_extensions()
+        >>> print(exts)
+        {'.7z', '.zip', '.rar'}
+        >>> ".7z" in exts
+        True
     """
     return {".7z", ".zip", ".rar"}
 
@@ -98,10 +251,24 @@ def get_supported_extensions() -> set[str]:
 def is_supported_archive(file_path: Path) -> bool:
     """Check if file has a supported archive extension.
 
+    Compares the file's extension (case-insensitive) against the list
+    of supported archive formats.
+
     Args:
-        file_path: Path to check.
+        file_path: Path to check. The extension is extracted from the
+                   filename and compared case-insensitively.
 
     Returns:
-        True if extension is supported.
+        True if the file extension is supported, False otherwise.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from autopasstryunzip.utils import is_supported_archive
+        >>> is_supported_archive(Path("document.zip"))
+        True
+        >>> is_supported_archive(Path("document.ZIP"))  # Case insensitive
+        True
+        >>> is_supported_archive(Path("document.txt"))
+        False
     """
     return file_path.suffix.lower() in get_supported_extensions()
