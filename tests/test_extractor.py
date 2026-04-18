@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autopasstryunzip.extractor import Extractor, get_7z_path
-from autopasstryunzip.utils import InvalidArchiveError, PasswordNotFoundError
+from try7z.extractor import Extractor, get_7z_path
+from try7z.utils import InvalidArchiveError, PasswordNotFoundError
 
 
 @pytest.fixture

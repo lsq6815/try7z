@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autopasstryunzip.password_manager import PasswordManager
-from autopasstryunzip.utils import PasswordManagerError
+from try7z.password_manager import PasswordManager
+from try7z.utils import PasswordManagerError
 
 
 @pytest.fixture

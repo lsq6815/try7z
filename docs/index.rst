@@ -39,20 +39,20 @@ Basic Usage
 
 Add passwords::
 
-    $ autopass-unzip add "my_password"
-    $ autopass-unzip add "pwd1" "pwd2" "pwd3"
+    $ try7z add "my_password"
+    $ try7z add "pwd1" "pwd2" "pwd3"
 
 List stored passwords::
 
-    $ autopass-unzip list
+    $ try7z list
 
 Extract an archive::
 
-    $ autopass-unzip extract path/to/archive.7z
+    $ try7z extract path/to/archive.7z
 
 With custom output directory::
 
-    $ autopass-unzip extract path/to/archive.7z -o output_dir
+    $ try7z extract path/to/archive.7z -o output_dir
 
 API Reference
 -------------

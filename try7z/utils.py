@@ -16,7 +16,7 @@ Exception Hierarchy:
 Example:
     Handling different exceptions::
 
-        from autopasstryunzip.utils import (
+        from try7z.utils import (
             AutoPassError,
             PasswordManagerError,
             ExtractionError
@@ -64,7 +64,7 @@ class PasswordManagerError(AutoPassError):
     - Accessing an invalid password index
 
     Example:
-        >>> from autopasstryunzip.password_manager import PasswordManager
+        >>> from try7z.password_manager import PasswordManager
         >>> pm = PasswordManager()
         >>> pm.add_password("test")
         >>> try:
@@ -84,7 +84,7 @@ class ExtractionError(AutoPassError):
     7-Zip executable, timeout).
 
     Example:
-        >>> from autopasstryunzip.extractor import Extractor
+        >>> from try7z.extractor import Extractor
         >>> try:
         ...     extractor = Extractor("nonexistent.7z")
         ... except ExtractionError as e:
@@ -108,7 +108,7 @@ class InvalidArchiveError(ExtractionError):
 
     Example:
         >>> from pathlib import Path
-        >>> from autopasstryunzip.extractor import Extractor
+        >>> from try7z.extractor import Extractor
         >>> try:
         ...     extractor = Extractor(Path("document.txt"))  # Not an archive
         ... except InvalidArchiveError as e:
@@ -125,7 +125,7 @@ class PasswordNotFoundError(ExtractionError):
     but none successfully decrypted the archive.
 
     Example:
-        >>> from autopasstryunzip.extractor import Extractor
+        >>> from try7z.extractor import Extractor
         >>> extractor = Extractor("encrypted.7z")
         >>> try:
         ...     extractor.extract_with_passwords(["wrong1", "wrong2"])
@@ -152,7 +152,7 @@ def get_user_data_dir() -> Path:
         - Linux: ``~/.local/share/autoPassTryUnzip``
 
     Example:
-        >>> from autopasstryunzip.utils import get_user_data_dir
+        >>> from try7z.utils import get_user_data_dir
         >>> data_dir = get_user_data_dir()
         >>> print(data_dir)
         WindowsPath('C:/Users/Username/AppData/Roaming/autoPassTryUnzip')
@@ -175,17 +175,17 @@ def get_user_data_dir() -> Path:
 def get_package_root() -> Path:
     """Get the package root directory.
 
-    Returns the absolute path to the autopasstryunzip package directory.
+    Returns the absolute path to the try7z package directory.
     This is useful for locating bundled resources like the 7-Zip executable.
 
     Returns:
-        Path to the autopasstryunzip package directory.
+        Path to the try7z package directory.
 
     Example:
-        >>> from autopasstryunzip.utils import get_package_root
+        >>> from try7z.utils import get_package_root
         >>> root = get_package_root()
         >>> print(root)
-        WindowsPath('C:/.../autopasstryunzip')
+        WindowsPath('C:/.../try7z')
     """
     return Path(__file__).parent
 
@@ -209,7 +209,7 @@ def validate_archive_path(archive_path: Path) -> Path:
 
     Example:
         >>> from pathlib import Path
-        >>> from autopasstryunzip.utils import validate_archive_path
+        >>> from try7z.utils import validate_archive_path
         >>> try:
         ...     path = validate_archive_path(Path("archive.7z"))
         ...     print(f"Valid archive: {path}")
@@ -238,7 +238,7 @@ def get_supported_extensions() -> set[str]:
         Currently supported: .7z, .zip, .rar
 
     Example:
-        >>> from autopasstryunzip.utils import get_supported_extensions
+        >>> from try7z.utils import get_supported_extensions
         >>> exts = get_supported_extensions()
         >>> print(exts)
         {'.7z', '.zip', '.rar'}
@@ -263,7 +263,7 @@ def is_supported_archive(file_path: Path) -> bool:
 
     Example:
         >>> from pathlib import Path
-        >>> from autopasstryunzip.utils import is_supported_archive
+        >>> from try7z.utils import is_supported_archive
         >>> is_supported_archive(Path("document.zip"))
         True
         >>> is_supported_archive(Path("document.ZIP"))  # Case insensitive

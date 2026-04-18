@@ -43,7 +43,7 @@ pip install . --no-cache-dir --force-reinstall
 
 **Verify the correct version is installed:**
 ```bash
-autopass-unzip -v
+try7z -v
 # Should show: Using 7-Zip binary: 7-Zip 24.09 (x64) ...
 ```
 
@@ -56,53 +56,53 @@ pip install -r requirements-dev.txt
 
 ## Usage
 
-After installation, use the `autopass-unzip` command:
+After installation, use the `try7z` command:
 
 ### Password Management
 
 ```bash
 # Show version information
-autopass-unzip -v
+try7z -v
 
 # Add password(s)
-autopass-unzip add "my_password"
-autopass-unzip add "pwd1" "pwd2" "pwd3"  # Add multiple at once
+try7z add "my_password"
+try7z add "pwd1" "pwd2" "pwd3"  # Add multiple at once
 
 # List stored passwords (shows 1-based index)
-autopass-unzip list
+try7z list
 
 # Remove password(s) by value
-autopass-unzip remove "my_password"
-autopass-unzip remove "pwd1" "pwd2" "pwd3"  # Remove multiple at once
+try7z remove "my_password"
+try7z remove "pwd1" "pwd2" "pwd3"  # Remove multiple at once
 
 # Remove password(s) by index (from 'list' command)
-autopass-unzip remove -i 3          # Remove index 3
-autopass-unzip remove -i 1 5 10     # Remove multiple indices
+try7z remove -i 3          # Remove index 3
+try7z remove -i 1 5 10     # Remove multiple indices
 
 # Show passwords file path
-autopass-unzip path
+try7z path
 
 # Open passwords file in default editor
-autopass-unzip edit
+try7z edit
 
 # Clear all passwords (with confirmation)
-autopass-unzip clear
+try7z clear
 
 # Clear all passwords (skip confirmation)
-autopass-unzip clear -f
+try7z clear -f
 ```
 
 ### Archive Extraction
 
 ```bash
 # Extract an archive using stored passwords
-autopass-unzip extract path/to/archive.7z
+try7z extract path/to/archive.7z
 
 # Extract with custom output directory
-autopass-unzip extract path/to/archive.7z -o output_dir
+try7z extract path/to/archive.7z -o output_dir
 
 # Try an additional password first
-autopass-unzip extract path/to/archive.7z -p "specific_password"
+try7z extract path/to/archive.7z -p "specific_password"
 ```
 
 ### Using Python Module
@@ -110,7 +110,7 @@ autopass-unzip extract path/to/archive.7z -p "specific_password"
 You can also run the tool using Python's module syntax:
 
 ```bash
-python -m autopasstryunzip extract path/to/archive.7z
+python -m try7z extract path/to/archive.7z
 ```
 
 ## Development
@@ -130,16 +130,16 @@ ruff check .
 ### Type Checking
 
 ```bash
-mypy autopasstryunzip/
+mypy try7z/
 ```
 
 ## Project Structure
 
 ```
 autoPassTryUnzip/
-├── autopasstryunzip/          # Main Python package
+├── try7z/          # Main Python package
 │   ├── __init__.py
-│   ├── __main__.py            # Entry point for `python -m autopasstryunzip`
+│   ├── __main__.py            # Entry point for `python -m try7z`
 │   ├── main.py                # CLI entry point with argparse
 │   ├── password_manager.py    # Password storage and management
 │   ├── extractor.py           # 7-Zip extraction logic

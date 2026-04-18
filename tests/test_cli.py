@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from autopasstryunzip.main import (
+from try7z.main import (
     cmd_add_password,
     cmd_remove_password,
     cmd_show_path,
 )
-from autopasstryunzip.password_manager import PasswordManager
+from try7z.password_manager import PasswordManager
 
 
 @pytest.fixture

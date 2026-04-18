@@ -16,19 +16,19 @@ Commands:
 Usage:
     Basic command structure::
 
-        $ autopass-unzip <command> [options]
+        $ try7z <command> [options]
 
     Examples::
 
-        $ autopass-unzip add "mypassword"
-        $ autopass-unzip add "pwd1" "pwd2" "pwd3"
-        $ autopass-unzip list
-        $ autopass-unzip remove -i 2 3
-        $ autopass-unzip extract archive.7z -o output_dir
+        $ try7z add "mypassword"
+        $ try7z add "pwd1" "pwd2" "pwd3"
+        $ try7z list
+        $ try7z remove -i 2 3
+        $ try7z extract archive.7z -o output_dir
 
     See individual command help::
 
-        $ autopass-unzip <command> --help
+        $ try7z <command> --help
 
 Exit Codes:
     0: Success
@@ -38,7 +38,7 @@ Example:
     Using argparse.Namespace for testing::
 
         >>> import argparse
-        >>> from autopasstryunzip.main import cmd_list_passwords
+        >>> from try7z.main import cmd_list_passwords
         >>>
         >>> args = argparse.Namespace()
         >>> exit_code = cmd_list_passwords(args)
@@ -51,10 +51,10 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from autopasstryunzip import __version__
-from autopasstryunzip.extractor import Extractor, get_7z_version
-from autopasstryunzip.password_manager import PasswordManager
-from autopasstryunzip.utils import AutoPassError, PasswordNotFoundError
+from try7z import __version__
+from try7z.extractor import Extractor, get_7z_version
+from try7z.password_manager import PasswordManager
+from try7z.utils import AutoPassError, PasswordNotFoundError
 
 
 def cmd_add_password(
@@ -492,13 +492,13 @@ def main() -> int:
     Example:
         Command-line usage::
 
-            $ autopass-unzip --version
-            $ autopass-unzip --help
-            $ autopass-unzip add "password"
-            $ autopass-unzip extract archive.7z
+            $ try7z --version
+            $ try7z --help
+            $ try7z add "password"
+            $ try7z extract archive.7z
     """
     parser = argparse.ArgumentParser(
-        prog="autopass-unzip",
+        prog="try7z",
         description="Auto-extract password-protected archives",
         add_help=False,
     )
@@ -561,7 +561,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.version:
-        print(f"autopasstryunzip {__version__}")
+        print(f"try7z {__version__}")
         print()
         print("A 7-Zip frontend for auto-extracting password-protected archives")
         print()

@@ -20,7 +20,7 @@ wheels/
 *.egg
 
 # Bundled 7-Zip (exception to lib/ ignore)
-!autopasstryunzip/lib/win-x64/
+!try7z/lib/win-x64/
 
 # Virtual Environment
 venv/

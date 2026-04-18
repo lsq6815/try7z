@@ -15,7 +15,7 @@ current platform (Windows x64, Linux x64, macOS x64).
 Example:
     Basic extraction with password list::
 
-        >>> from autopasstryunzip.extractor import Extractor
+        >>> from try7z.extractor import Extractor
         >>> from pathlib import Path
         >>>
         >>> extractor = Extractor(Path("archive.7z"))
@@ -41,7 +41,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from autopasstryunzip.utils import (
+from try7z.utils import (
     ExtractionError,
     InvalidArchiveError,
     PasswordNotFoundError,
@@ -65,7 +65,7 @@ def get_7z_path() -> Path:
         ExtractionError: If the current platform or architecture is not supported.
 
     Example:
-        >>> from autopasstryunzip.extractor import get_7z_path
+        >>> from try7z.extractor import get_7z_path
         >>> path = get_7z_path()
         >>> print(path.name)
         '7z.exe'  # On Windows
@@ -99,7 +99,7 @@ def get_7z_version() -> str:
         Returns "unknown" if version cannot be determined.
 
     Example:
-        >>> from autopasstryunzip.extractor import get_7z_version
+        >>> from try7z.extractor import get_7z_version
         >>> version = get_7z_version()
         >>> print(version)
         7-Zip (r) 26.00 (x86) : Igor Pavlov : Public domain : 2026-02-12
@@ -128,7 +128,7 @@ class Extractor:
 
     Example:
         >>> from pathlib import Path
-        >>> from autopasstryunzip.extractor import Extractor
+        >>> from try7z.extractor import Extractor
         >>>
         >>> # Create extractor (validates archive)
         >>> extractor = Extractor(Path("my_archive.7z"))
@@ -160,7 +160,7 @@ class Extractor:
 
         Example:
             >>> from pathlib import Path
-            >>> from autopasstryunzip.extractor import Extractor
+            >>> from try7z.extractor import Extractor
             >>>
             >>> # Valid archive
             >>> extractor = Extractor(Path("document.7z"))
@@ -169,7 +169,7 @@ class Extractor:
             >>> Extractor(Path("nonexistent.7z"))
             Traceback (most recent call last):
                 ...
-            autopasstryunzip.utils.InvalidArchiveError: Archive not found: ...
+            try7z.utils.InvalidArchiveError: Archive not found: ...
         """
         self.archive_path = validate_archive_path(archive_path)
 
@@ -247,7 +247,7 @@ class Extractor:
 
         Example:
             >>> from pathlib import Path
-            >>> from autopasstryunzip.extractor import Extractor
+            >>> from try7z.extractor import Extractor
             >>>
             >>> extractor = Extractor(Path("encrypted.7z"))
             >>>
@@ -582,8 +582,8 @@ class Extractor:
 
         Example:
             >>> from pathlib import Path
-            >>> from autopasstryunzip.extractor import Extractor
-            >>> from autopasstryunzip.utils import PasswordNotFoundError
+            >>> from try7z.extractor import Extractor
+            >>> from try7z.utils import PasswordNotFoundError
             >>>
             >>> extractor = Extractor(Path("secret.7z"))
             >>>

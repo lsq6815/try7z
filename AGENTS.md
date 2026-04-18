@@ -13,9 +13,9 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 ## Tech Stack
 
 - **Language**: Python 3.10+
-- **Archive Backend**: Bundled 7-Zip executable (`autopasstryunzip/lib/win-x64/7z.exe`)
+- **Archive Backend**: Bundled 7-Zip executable (`try7z/lib/win-x64/7z.exe`)
 - **Password Storage**: JSON file in user data directory (`%APPDATA%/autoPassTryUnzip/passwords.json` on Windows)
-- **Interface**: CLI (command: `autopass-unzip`)
+- **Interface**: CLI (command: `try7z`)
 - **Platform**: Windows x64 only (Linux/macOS support prepared)
 
 ## Supported Formats
@@ -28,9 +28,9 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 
 ```
 autoPassTryUnzip/
-├── autopasstryunzip/          # Main Python package
+├── try7z/          # Main Python package
 │   ├── __init__.py
-│   ├── __main__.py            # Entry point for `python -m autopasstryunzip`
+│   ├── __main__.py            # Entry point for `python -m try7z`
 │   ├── main.py                # CLI entry point with argparse
 │   ├── password_manager.py    # Password storage and management
 │   ├── extractor.py           # 7-Zip extraction logic
@@ -76,11 +76,11 @@ Example:
 import subprocess
 from pathlib import Path
 
-from autopasstryunzip.utils import ExtractionError
+from try7z.utils import ExtractionError
 ```
 
 ### Error Handling
-- Use custom exceptions from `autopasstryunzip.utils`:
+- Use custom exceptions from `try7z.utils`:
   - `AutoPassError` - base exception
   - `PasswordManagerError` - password management errors
   - `ExtractionError` - extraction errors
@@ -116,13 +116,13 @@ Use helper functions from `utils.py`:
 pip install .
 ```
 
-After installation, the `autopass-unzip` CLI command is available globally.
+After installation, the `try7z` CLI command is available globally.
 
 ## Commands
 
 ### Run Application (Installed)
 ```bash
-autopass-unzip <command> [options]
+try7z <command> [options]
 
 # Global Options:
 #   -h, --help                            Show help message and exit
@@ -140,7 +140,7 @@ autopass-unzip <command> [options]
 
 ### Run Application (Development)
 ```bash
-python -m autopasstryunzip <command> [options]
+python -m try7z <command> [options]
 ```
 
 ### Run Tests
@@ -155,7 +155,7 @@ ruff check .
 
 ### Run Type Checking
 ```bash
-mypy autopasstryunzip/
+mypy try7z/
 ```
 
 ### Build Package
@@ -181,7 +181,7 @@ pip install . --no-cache-dir --force-reinstall
 
 **Quick check after installation:**
 ```bash
-autopass-unzip -v
+try7z -v
 # Should show: Using 7-Zip binary: 7-Zip 24.09 (x64) ...
 ```
 

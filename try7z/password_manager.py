@@ -25,7 +25,7 @@ Security Note:
 Example:
     Basic usage::
 
-        >>> from autopasstryunzip.password_manager import PasswordManager
+        >>> from try7z.password_manager import PasswordManager
         >>>
         >>> # Create manager (loads existing passwords automatically)
         >>> pm = PasswordManager()
@@ -52,7 +52,7 @@ Example:
 import json
 from pathlib import Path
 
-from autopasstryunzip.utils import PasswordManagerError, get_user_data_dir
+from try7z.utils import PasswordManagerError, get_user_data_dir
 
 
 class PasswordManager:
@@ -67,7 +67,7 @@ class PasswordManager:
         passwords_file: Full path to the passwords.json file.
 
     Example:
-        >>> from autopasstryunzip.password_manager import PasswordManager
+        >>> from try7z.password_manager import PasswordManager
         >>> import tempfile
         >>>
         >>> # Create with custom data directory (for testing)
@@ -149,7 +149,7 @@ class PasswordManager:
             >>> pm.add_password("mysecret")  # Raises error
             Traceback (most recent call last):
                 ...
-            autopasstryunzip.utils.PasswordManagerError: Password already exists
+            try7z.utils.PasswordManagerError: Password already exists
         """
         if password in self._passwords:
             raise PasswordManagerError("Password already exists")
@@ -178,7 +178,7 @@ class PasswordManager:
             >>> pm.remove_password("nonexistent")  # Raises error
             Traceback (most recent call last):
                 ...
-            autopasstryunzip.utils.PasswordManagerError: Password not found
+            try7z.utils.PasswordManagerError: Password not found
         """
         if password not in self._passwords:
             raise PasswordManagerError("Password not found")
@@ -271,7 +271,7 @@ class PasswordManager:
             >>> pm.remove_by_index(5)  # Raises error
             Traceback (most recent call last):
                 ...
-            autopasstryunzip.utils.PasswordManagerError: Index 6 out of range
+            try7z.utils.PasswordManagerError: Index 6 out of range
         """
         if not 0 <= index < len(self._passwords):
             raise PasswordManagerError(f"Index {index + 1} out of range")

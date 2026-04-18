@@ -11,13 +11,13 @@ Main Components:
 Example:
     Basic usage via command line::
 
-        $ autopass-unzip add mypassword
-        $ autopass-unzip extract archive.7z
+        $ try7z add mypassword
+        $ try7z extract archive.7z
 
     Programmatic usage::
 
-        >>> from autopasstryunzip.password_manager import PasswordManager
-        >>> from autopasstryunzip.extractor import Extractor
+        >>> from try7z.password_manager import PasswordManager
+        >>> from try7z.extractor import Extractor
         >>>
         >>> # Manage passwords
         >>> pm = PasswordManager()
@@ -31,4 +31,4 @@ Attributes:
     __version__: The package version string.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.5.0"

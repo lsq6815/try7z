@@ -1,4 +1,4 @@
-autopasstryunzip
+try7z
 ================
 
 .. toctree::
@@ -7,37 +7,37 @@ autopasstryunzip
 Submodules
 ----------
 
-autopasstryunzip.extractor module
+try7z.extractor module
 ---------------------------------
 
-.. automodule:: autopasstryunzip.extractor
+.. automodule:: try7z.extractor
    :members:
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
 
-autopasstryunzip.main module
+try7z.main module
 ----------------------------
 
-.. automodule:: autopasstryunzip.main
+.. automodule:: try7z.main
    :members:
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
 
-autopasstryunzip.password_manager module
+try7z.password_manager module
 ----------------------------------------
 
-.. automodule:: autopasstryunzip.password_manager
+.. automodule:: try7z.password_manager
    :members:
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
 
-autopasstryunzip.utils module
+try7z.utils module
 -----------------------------
 
-.. automodule:: autopasstryunzip.utils
+.. automodule:: try7z.utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -46,7 +46,7 @@ autopasstryunzip.utils module
 Module contents
 ---------------
 
-.. automodule:: autopasstryunzip
+.. automodule:: try7z
    :members:
    :undoc-members:
    :show-inheritance:

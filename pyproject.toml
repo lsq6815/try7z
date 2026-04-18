@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "autopasstryunzip"
-version = "0.1.0"
+name = "try7z"
+version = "0.5.0"
 description = "A 7-Zip frontend for auto-extracting password-protected archives"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,14 +24,14 @@ classifiers = [
 ]
 
 [project.scripts]
-autopass-unzip = "autopasstryunzip.main:main"
+try7z = "try7z.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["autopasstryunzip*"]
+include = ["try7z*"]
 
 [tool.setuptools.package-data]
-autopasstryunzip = ["lib/**/*"]
+try7z = ["lib/**/*"]
 
 [tool.ruff]
 line-length = 100
