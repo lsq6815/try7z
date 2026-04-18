@@ -429,7 +429,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
     try:
         success, used_password = extractor.extract_with_passwords(
-            passwords, output_dir, show_progress=True
+            passwords, output_dir, show_progress=True, show_password_progress=True
         )
 
         if success:
@@ -449,7 +449,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
             return 1
 
     except PasswordNotFoundError:
-        print("Error: No matching password found.", file=sys.stderr)
+        print("No matching password found", file=sys.stderr)
         return 1
     except AutoPassError as e:
         print(f"Error: {e}", file=sys.stderr)

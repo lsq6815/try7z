@@ -215,6 +215,7 @@ class Extractor:
         output_dir: Path | None = None,
         passwords: list[str] | None = None,
         show_progress: bool = False,
+        show_password_progress: bool = False,
     ) -> tuple[bool, str | None]:
         """Attempt to extract archive with given passwords.
 
@@ -230,6 +231,9 @@ class Extractor:
                       attempts extraction without a password.
             show_progress: Whether to display a progress bar during extraction.
                           Only shown when a correct password is found.
+            show_password_progress: Whether to display which password is being
+                                   tried. Shows "Trying password X/N..." and
+                                   refreshes on the same line.
 
         Returns:
             Tuple of (success, used_password):
@@ -274,13 +278,22 @@ class Extractor:
 
         success = False
         used_password = None
+        password_progress_shown = False
 
         try:
             if show_progress:
                 # Two-phase extraction with progress bar:
                 # Phase 1: Find correct password without showing progress
                 correct_password = None
-                for password in passwords_to_try:
+                total_passwords = len(passwords_to_try)
+
+                for i, password in enumerate(passwords_to_try):
+                    # Show password progress if enabled
+                    if show_password_progress:
+                        progress_msg = f"Trying password {i + 1}/{total_passwords}..."
+                        print(f"\r{progress_msg}", end="", flush=True)
+                        password_progress_shown = True
+
                     try:
                         if self._extract_with_password(output_dir, password, show_progress=False):
                             correct_password = password
@@ -292,6 +305,13 @@ class Extractor:
 
                 # Phase 2: If found and progress requested, re-extract with progress
                 if correct_password is not None:
+                    # Show how many tries it took to find the password
+                    if password_progress_shown:
+                        tries_count = i + 1
+                        # Move to new line and show success message
+                        print(f"\nFound after {tries_count} trie(s)!")
+                    # Clear the line for extraction progress (tqdm will handle its own line)
+
                     # Remove the output dir to re-extract cleanly
                     if output_dir.exists():
                         import shutil
@@ -304,6 +324,10 @@ class Extractor:
                     if success:
                         used_password = correct_password
                         return True, correct_password
+                else:
+                    # No password worked - move to new line and show failure message
+                    if password_progress_shown:
+                        print()  # Move to new line, keeping the last "Trying password X/N..."
             else:
                 # Original behavior: try passwords without progress bar
                 for password in passwords_to_try:
@@ -529,6 +553,7 @@ class Extractor:
         passwords: list[str],
         output_dir: Path | None = None,
         show_progress: bool = False,
+        show_password_progress: bool = False,
     ) -> tuple[bool, str | None]:
         """Extract archive trying multiple passwords, raising on failure.
 
@@ -541,6 +566,9 @@ class Extractor:
             output_dir: Directory to extract to. If None, creates a
                        subdirectory named after the archive.
             show_progress: Whether to display a progress bar during extraction.
+            show_password_progress: Whether to display which password is being
+                                   tried. Shows "Trying password X/N..." and
+                                   refreshes on the same line.
 
         Returns:
             Tuple of (success, used_password). Success is always True
@@ -567,7 +595,9 @@ class Extractor:
             ... except PasswordNotFoundError:
             ...     print("Password not in list")
         """
-        success, used_password = self.try_extract(output_dir, passwords, show_progress)
+        success, used_password = self.try_extract(
+            output_dir, passwords, show_progress, show_password_progress
+        )
 
         if not success and passwords:
             raise PasswordNotFoundError(f"No matching password found for {self.archive_path.name}")
