@@ -1,4 +1,4 @@
-# AutoPassTryUnzip
+# try7z
 
 A 7-Zip frontend application for automatically extracting password-protected archives using a user-saved password list.
 
@@ -16,7 +16,7 @@ A 7-Zip frontend application for automatically extracting password-protected arc
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd autoPassTryUnzip
+cd try7z
 
 # Create virtual environment (recommended)
 python -m venv venv
@@ -136,7 +136,7 @@ mypy try7z/
 ## Project Structure
 
 ```
-autoPassTryUnzip/
+try7z/
 ├── try7z/          # Main Python package
 │   ├── __init__.py
 │   ├── __main__.py            # Entry point for `python -m try7z`
@@ -163,9 +163,9 @@ autoPassTryUnzip/
 ## Storage
 
 - Passwords are stored in plain text in the platform-specific user data directory:
-  - **Windows**: `%APPDATA%\autoPassTryUnzip\passwords.json`
-  - **macOS**: `~/Library/Application Support/autoPassTryUnzip/passwords.json`
-  - **Linux**: `~/.local/share/autoPassTryUnzip/passwords.json`
+  - **Windows**: `%APPDATA%\try7z\passwords.json`
+  - **macOS**: `~/Library/Application Support/try7z/passwords.json`
+  - **Linux**: `~/.local/share/try7z/passwords.json`
 
 ## Third-Party Software
 

@@ -1,11 +1,11 @@
-"""Custom exceptions and helper functions for the AutoPassTryUnzip application.
+"""Custom exceptions and helper functions for the try7z application.
 
 This module provides exception classes for different error scenarios and utility
 functions for path management and archive validation.
 
 Exception Hierarchy:
 
-* AutoPassError (base)
+* Try7zError (base)
 
   * PasswordManagerError
   * ExtractionError
@@ -17,7 +17,7 @@ Example:
     Handling different exceptions::
 
         from try7z.utils import (
-            AutoPassError,
+            Try7zError,
             PasswordManagerError,
             ExtractionError
         )
@@ -29,7 +29,7 @@ Example:
             print(f"Password error: {e}")
         except ExtractionError as e:
             print(f"Extraction error: {e}")
-        except AutoPassError as e:
+        except Try7zError as e:
             print(f"General error: {e}")
 """
 
@@ -38,8 +38,8 @@ import sys
 from pathlib import Path
 
 
-class AutoPassError(Exception):
-    """Base exception for AutoPassTryUnzip application.
+class Try7zError(Exception):
+    """Base exception for try7z application.
 
     All custom exceptions in this package inherit from this class.
     Catch this exception to handle any application-specific errors.
@@ -48,14 +48,14 @@ class AutoPassError(Exception):
         >>> try:
         ...     # Some operation
         ...     pass
-        ... except AutoPassError as e:
+        ... except Try7zError as e:
         ...     print(f"Application error: {e}")
     """
 
     pass
 
 
-class PasswordManagerError(AutoPassError):
+class PasswordManagerError(Try7zError):
     """Exception raised for password management errors.
 
     This exception is raised when password operations fail, such as:
@@ -76,7 +76,7 @@ class PasswordManagerError(AutoPassError):
     pass
 
 
-class ExtractionError(AutoPassError):
+class ExtractionError(Try7zError):
     """Exception raised for archive extraction errors.
 
     This exception is raised when archive extraction fails for reasons
@@ -147,15 +147,15 @@ def get_user_data_dir() -> Path:
         Path to the user data directory for storing passwords and settings.
         The directory structure follows platform conventions:
 
-        - Windows: ``%APPDATA%\\autoPassTryUnzip``
-        - macOS: ``~/Library/Application Support/autoPassTryUnzip``
-        - Linux: ``~/.local/share/autoPassTryUnzip``
+        - Windows: ``%APPDATA%\\try7z``
+        - macOS: ``~/Library/Application Support/try7z``
+        - Linux: ``~/.local/share/try7z``
 
     Example:
         >>> from try7z.utils import get_user_data_dir
         >>> data_dir = get_user_data_dir()
         >>> print(data_dir)
-        WindowsPath('C:/Users/Username/AppData/Roaming/autoPassTryUnzip')
+        WindowsPath('C:/Users/Username/AppData/Roaming/try7z')
 
     Note:
         This directory is NOT automatically created by this function.
@@ -164,12 +164,12 @@ def get_user_data_dir() -> Path:
     if sys.platform == "win32":
         app_data = os.environ.get("APPDATA")
         if app_data:
-            return Path(app_data) / "autoPassTryUnzip"
-        return Path.home() / "AppData" / "Roaming" / "autoPassTryUnzip"
+            return Path(app_data) / "try7z"
+        return Path.home() / "AppData" / "Roaming" / "try7z"
     elif sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / "autoPassTryUnzip"
+        return Path.home() / "Library" / "Application Support" / "try7z"
     else:
-        return Path.home() / ".local" / "share" / "autoPassTryUnzip"
+        return Path.home() / ".local" / "share" / "try7z"
 
 
 def get_package_root() -> Path:

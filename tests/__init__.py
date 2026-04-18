@@ -1,1 +1,1 @@
-"""Test package for AutoPassTryUnzip."""
+"""Test package for try7z."""

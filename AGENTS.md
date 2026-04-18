@@ -14,7 +14,7 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 
 - **Language**: Python 3.10+
 - **Archive Backend**: Bundled 7-Zip executable (`try7z/lib/win-x64/7z.exe`)
-- **Password Storage**: JSON file in user data directory (`%APPDATA%/autoPassTryUnzip/passwords.json` on Windows)
+- **Password Storage**: JSON file in user data directory (`%APPDATA%/try7z/passwords.json` on Windows)
 - **Interface**: CLI (command: `try7z`)
 - **Platform**: Windows x64 only (Linux/macOS support prepared)
 
@@ -27,7 +27,7 @@ A 7-Zip frontend application built with Python. Automatically extracts password-
 ## Project Structure
 
 ```
-autoPassTryUnzip/
+try7z/
 ├── try7z/          # Main Python package
 │   ├── __init__.py
 │   ├── __main__.py            # Entry point for `python -m try7z`
@@ -81,7 +81,7 @@ from try7z.utils import ExtractionError
 
 ### Error Handling
 - Use custom exceptions from `try7z.utils`:
-  - `AutoPassError` - base exception
+  - `Try7zError` - base exception
   - `PasswordManagerError` - password management errors
   - `ExtractionError` - extraction errors
   - `InvalidArchiveError` - invalid archive errors

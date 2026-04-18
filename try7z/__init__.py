@@ -1,4 +1,4 @@
-"""AutoPassTryUnzip - 7-Zip frontend for automatic password extraction.
+"""try7z - 7-Zip frontend for automatic password extraction.
 
 This package provides tools for managing password lists and automatically
 extracting password-protected archives using 7-Zip.

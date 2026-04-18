@@ -1,4 +1,4 @@
-"""CLI entry point and command handlers for AutoPassTryUnzip.
+"""CLI entry point and command handlers for try7z.
 
 This module provides the command-line interface for managing passwords
 and extracting archives. It uses argparse for command parsing and
@@ -54,7 +54,7 @@ from pathlib import Path
 from try7z import __version__
 from try7z.extractor import Extractor, get_7z_version
 from try7z.password_manager import PasswordManager
-from try7z.utils import AutoPassError, PasswordNotFoundError
+from try7z.utils import PasswordNotFoundError, Try7zError
 
 
 def cmd_add_password(
@@ -93,7 +93,7 @@ def cmd_add_password(
         try:
             manager.add_password(password)
             added_count += 1
-        except AutoPassError:
+        except Try7zError:
             print(f"Warning: Password '{password}' already exists", file=sys.stderr)
             skipped_count += 1
 
@@ -180,7 +180,7 @@ def cmd_remove_password(
                     removed_pw = manager.remove_by_index(idx)
                     print(f"  Removed [{idx + 1}]: {removed_pw}")
                     removed_count += 1
-                except AutoPassError:
+                except Try7zError:
                     failed_indices.append(idx + 1)  # Record 1-based for warning
 
             # Report warnings in original order
@@ -198,7 +198,7 @@ def cmd_remove_password(
                     manager.remove_password(password)
                     print(f"  Removed: {password}")
                     removed_count += 1
-                except AutoPassError:
+                except Try7zError:
                     failed_passwords.append(password)
 
             # Report warnings
@@ -209,7 +209,7 @@ def cmd_remove_password(
 
         return 0
 
-    except AutoPassError as e:
+    except Try7zError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
@@ -321,7 +321,7 @@ def cmd_show_path(
     Example:
         >>> args = argparse.Namespace()
         >>> cmd_show_path(args)
-        C:\\Users\\Username\\AppData\\Roaming\\autoPassTryUnzip\\passwords.json
+        C:\\Users\\Username\\AppData\\Roaming\\try7z\\passwords.json
         0
     """
     if manager is None:
@@ -412,7 +412,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
     try:
         extractor = Extractor(archive_path)
-    except AutoPassError as e:
+    except Try7zError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
@@ -475,7 +475,7 @@ def cmd_extract(args: argparse.Namespace) -> int:
     except PasswordNotFoundError:
         print("No matching password found", file=sys.stderr)
         return 1
-    except AutoPassError as e:
+    except Try7zError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 

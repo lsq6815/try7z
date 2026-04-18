@@ -1,7 +1,7 @@
-AutoPassTryUnzip Documentation
-==============================
+try7z Documentation
+===================
 
-**AutoPassTryUnzip** is a 7-Zip frontend application for automatically extracting
+**try7z** is a 7-Zip frontend application for automatically extracting
 password-protected archives using a user-saved password list.
 
 .. toctree::

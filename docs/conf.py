@@ -11,11 +11,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'AutoPassTryUnzip'
+project = 'try7z'
 copyright = '2026, Author'
 author = 'Author'
-release = '0.1.0'
-version = '0.1.0'
+release = '0.5.0'
+version = '0.5.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

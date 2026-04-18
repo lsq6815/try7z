@@ -1,4 +1,4 @@
-"""Password storage and management for AutoPassTryUnzip.
+"""Password storage and management for try7z.
 
 This module provides the PasswordManager class for managing a list of
 passwords stored in a plain text JSON file. Passwords are stored in the
