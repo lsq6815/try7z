@@ -159,8 +159,30 @@ mypy autopasstryunzip/
 ```
 
 ### Build Package
+
+**Standard build:**
 ```bash
 python -m build
+```
+
+**Full build (clean build):**
+When updating bundled binaries (e.g., 7-Zip), use a full build to ensure pip does not use cached files from previous builds:
+
+```bash
+# Clean previous build artifacts
+rm -r build dist *.egg-info
+
+# Reinstall without cache
+pip install . --no-cache-dir --force-reinstall
+```
+
+**Why full build is needed:**
+`setuptools` caches build artifacts in the `build/` directory. When updating bundled binaries (like `7z.exe` or `7z.dll`), a standard `pip install .` may reuse the cached versions from `build/lib/`, resulting in the old binaries being installed. Always perform a full build after modifying bundled resources.
+
+**Quick check after installation:**
+```bash
+autopass-unzip -v
+# Should show: Using 7-Zip binary: 7-Zip 24.09 (x64) ...
 ```
 
 ### Build Documentation

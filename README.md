@@ -27,6 +27,26 @@ python -m venv venv
 pip install .
 ```
 
+### Full Build (After Updating Bundled Binaries)
+
+If you have updated bundled binaries (e.g., 7-Zip executable or DLLs) and need to reinstall, perform a **full build** to ensure `pip` does not reuse cached build artifacts:
+
+```bash
+# Clean previous build artifacts
+rm -r build dist *.egg-info
+
+# Reinstall without cache
+pip install . --no-cache-dir --force-reinstall
+```
+
+**Why this is needed:** `setuptools` caches files in the `build/` directory. Without cleaning, `pip install .` may install old versions of bundled binaries (e.g., an outdated `7z.exe`).
+
+**Verify the correct version is installed:**
+```bash
+autopass-unzip -v
+# Should show: Using 7-Zip binary: 7-Zip 24.09 (x64) ...
+```
+
 ### Development Installation
 
 ```bash
