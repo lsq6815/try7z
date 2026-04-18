@@ -47,7 +47,7 @@ try7z/
 │   ├── conf.py                # Sphinx configuration
 │   ├── index.rst              # Documentation homepage
 │   ├── modules.rst            # API module index
-│   ├── Makefile               # Build commands
+│   ├── build.py               # Pure Python build script
 │   └── _static/               # Static assets
 ├── pyproject.toml             # Package configuration
 ├── MANIFEST.in                # Package data includes
@@ -186,13 +186,10 @@ try7z -v
 ```
 
 ### Build Documentation
+
 ```bash
 # Generate HTML documentation (output: docs/_build/html/)
-sphinx-build -b html docs docs/_build/html
-
-# Or use the Makefile
-cd docs
-make html
+python docs/build.py
 ```
 
 ### View Documentation

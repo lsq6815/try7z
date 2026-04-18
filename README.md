@@ -133,6 +133,14 @@ ruff check .
 mypy try7z/
 ```
 
+### Build Documentation
+
+```bash
+python docs/build.py
+```
+
+Open `docs/_build/html/index.html` in a web browser after building.
+
 ## Project Structure
 
 ```
