@@ -98,6 +98,7 @@ class Extractor:
             output_dir = self.archive_path.parent / self.archive_path.stem
 
         output_dir = output_dir.resolve()
+        created_by_us = not output_dir.exists()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         passwords_to_try: list[str | None]
@@ -106,17 +107,29 @@ class Extractor:
         else:
             passwords_to_try = [None]
 
-        for password in passwords_to_try:
-            try:
-                success = self._extract_with_password(output_dir, password)
-                if success:
-                    return True, password
-            except ExtractionError:
-                raise
-            except Exception:
-                continue
+        success = False
+        used_password = None
 
-        return False, None
+        try:
+            for password in passwords_to_try:
+                try:
+                    success = self._extract_with_password(output_dir, password)
+                    if success:
+                        used_password = password
+                        return True, password
+                except ExtractionError:
+                    raise
+                except Exception:
+                    continue
+        finally:
+            if not success and created_by_us and output_dir.exists():
+                try:
+                    if not any(output_dir.iterdir()):
+                        output_dir.rmdir()
+                except OSError:
+                    pass
+
+        return success, used_password
 
     def _extract_with_password(self, output_dir: Path, password: str | None) -> bool:
         """Extract archive with a specific password.

@@ -288,3 +288,30 @@ class TestExtractor:
 
         assert success is False
         assert used_password is None
+
+    def test_try_extract_failure_no_empty_dir(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test that try_extract does not leave empty dir on failure."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "should_not_exist"
+
+        success, used_password = extractor.try_extract(
+            output_dir, ["wrong1", "wrong2"]
+        )
+
+        assert success is False
+        assert used_password is None
+        assert not output_dir.exists()
+
+    def test_extract_with_passwords_failure_no_empty_dir(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test that extract_with_passwords does not leave empty dir on failure."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "should_not_exist"
+
+        with pytest.raises(PasswordNotFoundError):
+            extractor.extract_with_passwords(["wrong1", "wrong2"], output_dir)
+
+        assert not output_dir.exists()
