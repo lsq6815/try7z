@@ -89,6 +89,44 @@ class TestPasswordManager:
         assert "secret_password" in data["passwords"]
 
 
+class TestCorruptFile:
+    """Test cases for corrupt passwords file handling."""
+
+    def test_corrupt_json_raises_and_creates_backup(self, temp_dir: Path) -> None:
+        """Test that corrupt JSON file raises error and creates backup."""
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text("not valid json", encoding="utf-8")
+
+        with pytest.raises(PasswordManagerError, match="corrupt"):
+            PasswordManager(data_dir=temp_dir)
+
+        # Check backup was created
+        backup_file = passwords_file.with_suffix(".json.bak")
+        assert backup_file.exists()
+        assert backup_file.read_text(encoding="utf-8") == "not valid json"
+
+    def test_corrupt_json_empties_passwords(self, temp_dir: Path) -> None:
+        """Test that corrupt JSON results in empty password list."""
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text("not valid json", encoding="utf-8")
+
+        with pytest.raises(PasswordManagerError):
+            PasswordManager(data_dir=temp_dir)
+
+        # After the error, a new instance should start fresh
+        # (the corrupt file was moved to backup)
+        pm = PasswordManager(data_dir=temp_dir)
+        assert pm.count() == 0
+
+    def test_missing_passwords_key_raises(self, temp_dir: Path) -> None:
+        """Test that JSON without 'passwords' key raises error."""
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text('{"other_key": []}', encoding="utf-8")
+
+        with pytest.raises(PasswordManagerError, match="corrupt"):
+            PasswordManager(data_dir=temp_dir)
+
+
 class TestRemoveByIndex:
     """Test cases for remove_by_index method."""
 

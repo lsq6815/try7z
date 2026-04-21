@@ -109,16 +109,38 @@ class PasswordManager:
         """Load passwords from the JSON file.
 
         Internal method called during initialization. If the file
-        doesn't exist or is invalid, starts with an empty list.
+        doesn't exist, starts with an empty list. If the file exists
+        but is corrupt, backs it up and warns the user before resetting.
         """
-        if self.passwords_file.exists():
-            try:
-                data = json.loads(self.passwords_file.read_text(encoding="utf-8"))
-                self._passwords = data.get("passwords", [])
-            except (json.JSONDecodeError, KeyError):
-                self._passwords = []
-        else:
+        if not self.passwords_file.exists():
             self._passwords = []
+            return
+
+        try:
+            data = json.loads(self.passwords_file.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise PasswordManagerError("Passwords file is corrupt (not a JSON object).")
+            if "passwords" not in data:
+                raise PasswordManagerError("Passwords file is corrupt (missing 'passwords' key).")
+            self._passwords = data.get("passwords", [])
+        except (json.JSONDecodeError, KeyError, OSError, PasswordManagerError) as e:
+            # Back up corrupt file before resetting
+            backup_path = self.passwords_file.with_suffix(".json.bak")
+            try:
+                self.passwords_file.rename(backup_path)
+            except OSError:
+                backup_path = None
+
+            self._passwords = []
+            backup_msg = (
+                f"Corrupt file backed up to: {backup_path}"
+                if backup_path
+                else "Could not back up corrupt file."
+            )
+            raise PasswordManagerError(
+                f"Passwords file is corrupt ({e}). "
+                f"Started with empty list. {backup_msg}"
+            ) from e
 
     def _save_passwords(self) -> None:
         """Save passwords to the JSON file.
