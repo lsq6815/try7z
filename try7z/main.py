@@ -52,7 +52,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from try7z import __version__
+from try7z import __build_date__, __version__
 from try7z.extractor import Extractor, get_7z_version
 from try7z.password_manager import PasswordManager
 from try7z.utils import PasswordNotFoundError, Try7zError
@@ -439,8 +439,7 @@ def cmd_extract(
     if output_dir.exists() and not args.force:
         item_type = "directory" if output_dir.is_dir() else "file"
         confirm = input(
-            f"Output {item_type} '{output_dir.name}' already exists. "
-            f"Overwrite? [y/N]: "
+            f"Output {item_type} '{output_dir.name}' already exists. Overwrite? [y/N]: "
         )
         if confirm.lower() != "y":
             print("Extraction cancelled.")
@@ -570,6 +569,7 @@ def main() -> int:
 
     if args.version:
         print(f"try7z {__version__}")
+        print(f"Built: {__build_date__}")
         print()
         print("A 7-Zip frontend for auto-extracting password-protected archives")
         print()

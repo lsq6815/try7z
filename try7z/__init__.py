@@ -29,6 +29,10 @@ Example:
 
 Attributes:
     __version__: The package version string.
+    __build_date__: The build/compilation date.
 """
 
+from datetime import datetime
+
 __version__ = "0.5.0"
+__build_date__ = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
