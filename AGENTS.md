@@ -1,220 +1,111 @@
-# AGENTS.md
+# PROJECT KNOWLEDGE BASE
 
-## Project Overview
+**Generated:** 2026-04-27
+**Commit:** 0f2bc28
+**Branch:** master
 
-A 7-Zip frontend application built with Python. Automatically extracts password-protected archives using a user-saved password list.
+## OVERVIEW
 
-### Core Features
-- Manage user-saved passwords (plain text JSON storage)
-- Accept user input for archive file paths
-- Automatically attempt extraction with saved passwords
-- Report extraction results to the user
+Python 3.10+ CLI frontend for 7-Zip. Manages a password list and auto-extracts password-protected `.7z`/`.zip`/`.rar` archives using a bundled 7-Zip executable.
 
-## Tech Stack
-
-- **Language**: Python 3.10+
-- **Archive Backend**: Bundled 7-Zip executable (`try7z/lib/win-x64/7z.exe`)
-- **Password Storage**: JSON file in user data directory (`%APPDATA%/try7z/passwords.json` on Windows)
-- **Interface**: CLI (command: `try7z`)
-- **Platform**: Windows x64 only (Linux/macOS support prepared)
-
-## Supported Formats
-
-- `.7z` - 7-Zip archive
-- `.zip` - ZIP archive
-- `.rar` - RAR archive
-
-## Project Structure
+## STRUCTURE
 
 ```
 try7z/
-├── try7z/          # Main Python package
-│   ├── __init__.py
-│   ├── __main__.py            # Entry point for `python -m try7z`
-│   ├── main.py                # CLI entry point with argparse
-│   ├── password_manager.py    # Password storage and management
-│   ├── extractor.py           # 7-Zip extraction logic
-│   ├── utils.py               # Custom exceptions and helpers
-│   └── lib/
-│       └── win-x64/
-│           └── 7z.exe         # Bundled 7-Zip executable
-├── tests/
-│   ├── __init__.py
+├── try7z/              # Main package
+│   ├── main.py         # CLI entry (argparse), all command handlers
+│   ├── extractor.py    # Archive extraction via bundled 7z.exe
+│   ├── password_manager.py  # JSON password storage
+│   ├── utils.py        # Exceptions, path helpers, archive validation
+│   └── lib/win-x64/7z.exe   # Bundled binary (Windows x64)
+├── tests/              # pytest suite
 │   ├── test_cli.py
-│   ├── test_password_manager.py
-│   └── test_extractor.py
-├── docs/                      # Sphinx documentation
-│   ├── conf.py                # Sphinx configuration
-│   ├── index.rst              # Documentation homepage
-│   ├── modules.rst            # API module index
-│   ├── build.py               # Pure Python build script
-│   └── _static/               # Static assets
-├── pyproject.toml             # Package configuration
-├── MANIFEST.in                # Package data includes
-├── requirements.txt
-├── requirements-dev.txt
-├── README.md
-└── AGENTS.md
+│   ├── test_extractor.py
+│   └── test_password_manager.py
+├── docs/               # Sphinx docs (RTD theme)
+│   ├── conf.py
+│   ├── index.rst
+│   └── build.py        # Pure-Python build script
+└── pyproject.toml      # setuptools config, ruff/mypy/pytest settings
 ```
 
-## Development Guidelines
+## WHERE TO LOOK
 
-### Code Style
-- Follow PEP 8 conventions
-- Use type hints for all function signatures (use `X | None` syntax)
-- Use f-strings for string formatting
-- Maximum line length: 100 characters
-- Use descriptive variable and function names
+| Task | Location | Notes |
+|------|----------|-------|
+| Add CLI command | `try7z/main.py` | Add subparser + handler function |
+| Modify extraction logic | `try7z/extractor.py` | `Extractor` class, `_extract_with_password` |
+| Change password storage | `try7z/password_manager.py` | `PasswordManager` class |
+| Add exception type | `try7z/utils.py` | Inherit from `Try7zError` |
+| Add tests | `tests/test_*.py` | Mirror module under test |
+| Build docs | `docs/build.py` | Outputs to `docs/_build/html/` |
 
-### Imports Order
-1. Standard library
-2. Third-party libraries
-3. Local modules
+## CODE MAP
 
-Example:
-```python
-import subprocess
-from pathlib import Path
+| Symbol | Type | Location | Role |
+|--------|------|----------|------|
+| `main` | function | `try7z/main.py:491` | CLI entry point, argparse setup |
+| `cmd_extract` | function | `try7z/main.py:383` | Archive extraction handler |
+| `Extractor` | class | `try7z/extractor.py:120` | 7-Zip wrapper, password brute-force |
+| `try_extract` | method | `try7z/extractor.py:214` | Returns `(success, password)` |
+| `extract_with_passwords` | method | `try7z/extractor.py:554` | Raises `PasswordNotFoundError` on failure |
+| `PasswordManager` | class | `try7z/password_manager.py:58` | JSON read/write |
+| `get_7z_path` | function | `try7z/extractor.py:55` | Platform-specific binary resolution |
+| `get_user_data_dir` | function | `try7z/utils.py:139` | `%APPDATA%/try7z` on Windows |
+| `validate_archive_path` | function | `try7z/utils.py:193` | Exists + is_file check |
 
-from try7z.utils import ExtractionError
-```
+## CONVENTIONS
 
-### Error Handling
-- Use custom exceptions from `try7z.utils`:
-  - `Try7zError` - base exception
-  - `PasswordManagerError` - password management errors
-  - `ExtractionError` - extraction errors
-  - `InvalidArchiveError` - invalid archive errors
-  - `PasswordNotFoundError` - no matching password
-- Provide meaningful error messages to users
+- **Type hints**: `X \| None` syntax (PEP 604), enforced by mypy strict mode
+- **Line length**: 100 (ruff `line-length`)
+- **Import order**: stdlib → third-party → local modules
+- **Docstrings**: Google-style, with `>>>` doctests in public APIs
+- **Password indices**: 1-based in CLI, 0-based internally
+- **Progress bars**: `tqdm` for extraction progress (`-bsp1` 7-Zip flag)
 
-### Platform Paths
+## ANTI-PATTERNS (THIS PROJECT)
 
-Use helper functions from `utils.py`:
-- `get_user_data_dir()` - Platform-specific user data directory for passwords
-- `get_package_root()` - Package directory (contains bundled 7z.exe)
+- **Do NOT** suppress type errors with `# type: ignore` or `Any` — mypy is strict
+- **Do NOT** use `as any` / `@ts-ignore` — this is Python, but same rule applies
+- **Do NOT** add runtime dependencies — production has zero deps (only `tqdm` currently)
+- **Do NOT** store passwords encrypted — intentional plain-text JSON for user editing
+- **Do NOT** forget full build after updating `7z.exe` — setuptools caches in `build/`
 
-### Testing
-- Use pytest as the testing framework
-- Place test files in the `tests/` directory
-- Use `tempfile.TemporaryDirectory` for test fixtures
-- Tests use bundled 7z.exe to create test archives
+## UNIQUE STYLES
 
-### Dependencies
-- Production: None (uses bundled 7-Zip)
-- Development: `pytest`, `ruff`, `mypy`, `sphinx`, `sphinx-rtd-theme`, `sphinx-autodoc-typehints`
+- **Bundled binary**: 7-Zip executable ships inside the Python package (`lib/win-x64/`)
+- **Two-phase extraction**: When progress enabled, first pass finds password silently, second pass shows `tqdm` bar
+- **Raw byte parsing**: `_extract_with_progress` reads stdout byte-by-byte to handle `\r` carriage returns from 7-Zip
+- **Corrupt file recovery**: `PasswordManager` backs up corrupt `passwords.json` to `.json.bak` before resetting
 
-### Documentation
-- All public modules, classes, and functions must have Google-style docstrings
-- Docstrings are used to auto-generate API documentation via Sphinx
-- Keep docstrings up-to-date when modifying function signatures or behavior
-- Use type hints - they are automatically included in the documentation
-
-## Installation
+## COMMANDS
 
 ```bash
-pip install .
-```
-
-After installation, the `try7z` CLI command is available globally.
-
-## Commands
-
-### Run Application (Installed)
-```bash
-try7z <command> [options]
-
-# Global Options:
-#   -h, --help                            Show help message and exit
-#   -v, --version                         Show version information and exit
-
-# Commands:
-#   add <password> [<password> ...]       Add password(s)
-#   remove [-i N [N ...]] [<password> ...]  Remove by value(s) or index
-#   list                                  List stored passwords (with 1-based index)
-#   path                                  Show passwords file path
-#   edit                                  Open passwords file in default editor
-#   clear [-f]                            Clear all passwords
-#   extract <archive>                     Extract an archive
-```
-
-### Run Application (Development)
-```bash
+# Development
 python -m try7z <command> [options]
-```
 
-### Run Tests
-```bash
+# Tests
 pytest
-```
 
-### Run Linting
-```bash
+# Lint + Type check
 ruff check .
-```
-
-### Run Type Checking
-```bash
 mypy try7z/
-```
 
-### Build Package
-
-**Standard build:**
-```bash
+# Standard build
 python -m build
-```
 
-**Full build (clean build):**
-When updating bundled binaries (e.g., 7-Zip), use a full build to ensure pip does not use cached files from previous builds:
-
-```bash
-# Clean previous build artifacts
+# Full build (after updating bundled binaries)
 rm -r build dist *.egg-info
-
-# Reinstall without cache
 pip install . --no-cache-dir --force-reinstall
-```
 
-**Why full build is needed:**
-`setuptools` caches build artifacts in the `build/` directory. When updating bundled binaries (like `7z.exe` or `7z.dll`), a standard `pip install .` may reuse the cached versions from `build/lib/`, resulting in the old binaries being installed. Always perform a full build after modifying bundled resources.
-
-**Quick check after installation:**
-```bash
-try7z -v
-# Should show: Using 7-Zip binary: 7-Zip 24.09 (x64) ...
-```
-
-### Build Documentation
-
-```bash
-# Generate HTML documentation (output: docs/_build/html/)
+# Documentation
 python docs/build.py
+# Open docs/_build/html/index.html
 ```
 
-### View Documentation
-Open `docs/_build/html/index.html` in a web browser after building.
+## NOTES
 
-## AI Agent Instructions
-
-### When Adding New Features
-1. Follow the existing project structure
-2. Add appropriate type hints using `X | None` syntax
-3. Write tests for new functionality
-4. Update documentation if needed
-
-### When Fixing Bugs
-1. Add a test case that reproduces the bug
-2. Fix the bug
-3. Ensure all tests pass
-
-### When Refactoring
-1. Ensure existing tests pass before refactoring
-2. Run tests after refactoring to verify behavior
-3. Maintain backward compatibility for public APIs
-
-## Notes
-
-- Supports `.7z`, `.zip`, `.rar` formats via bundled 7-Zip
-- Passwords are stored in plain text in the user data directory (platform-specific)
-- 7-Zip is licensed under GNU LGPL (see README.md for details)
+- Windows x64 only at runtime; Linux/macOS paths exist in `get_7z_path()` but require manual binary placement
+- `setuptools` caches `build/lib/` — always clean-build when updating `7z.exe`
+- 7-Zip is LGPL-licensed; see README.md for attribution
+- Password file location: `%APPDATA%\try7z\passwords.json` (Windows)
