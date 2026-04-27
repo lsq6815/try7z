@@ -56,6 +56,7 @@ from pathlib import Path
 from try7z import __build_date__, __version__
 from try7z.completions import (
     generate_bash_completion,
+    generate_powershell_completion,
     generate_pwsh_completion,
     install_completion,
 )
@@ -501,7 +502,7 @@ def cmd_autocompletion(args: argparse.Namespace) -> int:
 
     Args:
         args: Parsed command line arguments. Expected attributes:
-            - shell: Target shell ("bash" or "pwsh")
+            - shell: Target shell ("bash", "pwsh", or "powershell")
             - install: Whether to install instead of printing to stdout
 
     Returns:
@@ -529,8 +530,14 @@ def cmd_autocompletion(args: argparse.Namespace) -> int:
         script = generate_bash_completion()
     elif shell == "pwsh":
         script = generate_pwsh_completion()
+    elif shell == "powershell":
+        script = generate_powershell_completion()
     else:
-        print(f"Error: Unsupported shell '{shell}'. Use 'bash' or 'pwsh'.", file=sys.stderr)
+        print(
+            f"Error: Unsupported shell '{shell}'. "
+            "Use 'bash', 'pwsh', or 'powershell'.",
+            file=sys.stderr,
+        )
         return 1
 
     if args.install:
@@ -633,7 +640,7 @@ def main() -> int:
     )
     completion_parser.add_argument(
         "--shell",
-        choices=["bash", "pwsh"],
+        choices=["bash", "pwsh", "powershell"],
         required=True,
         help="Target shell for completion script",
     )

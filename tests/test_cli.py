@@ -692,7 +692,20 @@ class TestAutocompletionCommand:
         assert exit_code == 0
         captured = capsys.readouterr()
         assert "Register-ArgumentCompleter" in captured.out
-        assert "try7z" in captured.out
+        assert "try7z pwsh completion script" in captured.out
+
+    def test_autocompletion_powershell_stdout(self, capsys) -> None:
+        """Test generating powershell completion script to stdout."""
+        args = argparse.Namespace()
+        args.shell = "powershell"
+        args.install = False
+
+        exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "Register-ArgumentCompleter" in captured.out
+        assert "try7z powershell completion script" in captured.out
 
     def test_autocompletion_bash_install(self, temp_dir: Path, capsys) -> None:
         """Test installing bash completion script."""
@@ -737,6 +750,28 @@ class TestAutocompletionCommand:
         captured = capsys.readouterr()
         assert "installed" in captured.out
         assert "PowerShell" in captured.out
+
+    def test_autocompletion_powershell_install(self, temp_dir: Path, capsys) -> None:
+        """Test installing powershell completion script."""
+        profile = temp_dir / "powershell_profile.ps1"
+
+        with patch(
+            "try7z.completions._get_powershell_profile_path",
+            return_value=profile,
+        ):
+            args = argparse.Namespace()
+            args.shell = "powershell"
+            args.install = True
+
+            exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        assert profile.exists()
+        assert "Register-ArgumentCompleter" in profile.read_text()
+        assert "try7z powershell completion script" in profile.read_text()
+        captured = capsys.readouterr()
+        assert "installed" in captured.out
+        assert "powershell" in captured.out
 
     def test_autocompletion_unsupported_shell(self, capsys) -> None:
         """Test error for unsupported shell."""
@@ -840,7 +875,7 @@ class TestAutocompletionCommand:
         """Test replacing existing pwsh completion script."""
         profile = temp_dir / "profile.ps1"
         profile.write_text(
-            "# profile\n# try7z PowerShell completion script\n"
+            "# profile\n# try7z pwsh completion script\n"
             "Register-ArgumentCompleter -Native -CommandName try7z "
             "-ScriptBlock {\n    param($wordToComplete)\n}\n# other\n",
             encoding="utf-8",
@@ -858,7 +893,7 @@ class TestAutocompletionCommand:
         assert exit_code == 0
         content = profile.read_text(encoding="utf-8")
         assert "# profile" in content
-        assert content.count("try7z PowerShell completion script") == 1
+        assert content.count("try7z pwsh completion script") == 1
         assert "# other" in content
         captured = capsys.readouterr()
         assert "installed" in captured.out
