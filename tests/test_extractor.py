@@ -3,11 +3,12 @@
 import subprocess
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
-from try7z.extractor import Extractor, get_7z_path
-from try7z.utils import InvalidArchiveError, PasswordNotFoundError
+from try7z.extractor import Extractor, get_7z_path, get_7z_version
+from try7z.utils import ExtractionError, InvalidArchiveError, PasswordNotFoundError
 
 
 @pytest.fixture
@@ -315,3 +316,76 @@ class TestExtractor:
             extractor.extract_with_passwords(["wrong1", "wrong2"], output_dir)
 
         assert not output_dir.exists()
+
+    def test_try_extract_with_progress_bar(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extraction with progress bar enabled."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(
+            output_dir,
+            ["wrong1", "secret123"],
+            show_progress=True,
+            show_password_progress=True,
+        )
+
+        assert success is True
+        assert used_password == "secret123"
+        assert (output_dir / "src" / "test.txt").exists()
+
+    def test_try_extract_with_progress_no_password_progress(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extraction with progress but no password progress."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(
+            output_dir,
+            ["secret123"],
+            show_progress=True,
+            show_password_progress=False,
+        )
+
+        assert success is True
+        assert used_password == "secret123"
+        assert (output_dir / "src" / "test.txt").exists()
+
+    def test_extract_plain_with_progress_bar(
+        self, plain_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test extracting plain archive with progress bar."""
+        extractor = Extractor(plain_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, used_password = extractor.try_extract(
+            output_dir,
+            show_progress=True,
+            show_password_progress=False,
+        )
+
+        assert success is True
+        assert used_password is None
+        assert (output_dir / "src" / "test.txt").exists()
+
+
+class TestGet7zVersion:
+    """Test cases for get_7z_version function."""
+
+    def test_get_7z_version_unknown(self) -> None:
+        """Test that get_7z_version returns 'unknown' on error."""
+        with patch(
+            "try7z.extractor.subprocess.run",
+            side_effect=Exception("Command failed"),
+        ):
+            version = get_7z_version()
+            assert version == "unknown"
+
+    def test_get_7z_version_success(self) -> None:
+        """Test that get_7z_version returns version string."""
+        version = get_7z_version()
+        assert isinstance(version, str)
+        assert version != "unknown"
+        assert "7-Zip" in version

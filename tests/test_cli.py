@@ -8,6 +8,9 @@ from unittest.mock import patch
 
 import pytest
 
+import sys
+from unittest.mock import patch
+
 from try7z.extractor import get_7z_path, get_7z_version
 from try7z.main import (
     cmd_add_password,
@@ -17,6 +20,7 @@ from try7z.main import (
     cmd_list_passwords,
     cmd_remove_password,
     cmd_show_path,
+    main,
 )
 from try7z.password_manager import PasswordManager
 
@@ -86,6 +90,27 @@ class TestAddCommand:
         assert "test123" in password_manager.get_passwords()
         captured = capsys.readouterr()
         assert "Added 1 password(s)" in captured.out
+
+    def test_add_password_default_manager(self, capsys, monkeypatch) -> None:
+        """Test adding password with default manager (manager=None)."""
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as d:
+            data_dir = Path(d)
+            manager = PasswordManager(data_dir=data_dir)
+            monkeypatch.setattr(
+                "try7z.main.PasswordManager",
+                lambda: manager,
+            )
+
+            args = argparse.Namespace()
+            args.passwords = ["default_test"]
+
+            exit_code = cmd_add_password(args)
+
+            assert exit_code == 0
+            assert "default_test" in manager.get_passwords()
 
     def test_add_multiple_passwords(self, password_manager: PasswordManager, capsys) -> None:
         """Test adding multiple passwords at once."""
@@ -290,6 +315,26 @@ class TestListCommand:
         captured = capsys.readouterr()
         assert "No passwords stored" in captured.out
 
+    def test_list_empty_default_manager(self, capsys, monkeypatch) -> None:
+        """Test listing with default manager when empty."""
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as d:
+            data_dir = Path(d)
+            manager = PasswordManager(data_dir=data_dir)
+            monkeypatch.setattr(
+                "try7z.main.PasswordManager",
+                lambda: manager,
+            )
+
+            args = argparse.Namespace()
+            exit_code = cmd_list_passwords(args)
+
+            assert exit_code == 0
+            captured = capsys.readouterr()
+            assert "No passwords stored" in captured.out
+
     def test_list_with_passwords(self, password_manager: PasswordManager, capsys) -> None:
         """Test listing stored passwords with indices."""
         password_manager.add_password("first")
@@ -480,3 +525,142 @@ class TestGet7zVersion:
         assert isinstance(version, str)
         assert version != "unknown"
         assert "7-Zip" in version
+
+
+class TestMain:
+    """Test cases for main() function."""
+
+    def test_main_version_flag(self, capsys) -> None:
+        """Test that --version flag works."""
+        with patch.object(sys, "argv", ["try7z", "--version"]):
+            exit_code = main()
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "try7z" in captured.out
+        assert "7-Zip" in captured.out
+
+    def test_main_no_command_shows_help(self, capsys) -> None:
+        """Test that running without commands shows help."""
+        with patch.object(sys, "argv", ["try7z"]):
+            exit_code = main()
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "usage:" in captured.out.lower()
+
+    def test_main_add_command(self, temp_dir: Path, capsys) -> None:
+        """Test that add command works through main()."""
+        with patch.object(
+            sys, "argv", ["try7z", "add", "testpassword123"]
+        ):
+            with patch(
+                "try7z.main.PasswordManager"
+            ) as mock_manager_class:
+                mock_manager = mock_manager_class.return_value
+                mock_manager.count.return_value = 1
+                exit_code = main()
+
+        assert exit_code == 0
+
+    def test_main_extract_command(
+        self, plain_7z_archive: Path, temp_dir: Path, capsys
+    ) -> None:
+        """Test that extract command works through main()."""
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "try7z",
+                "extract",
+                str(plain_7z_archive),
+                "-o",
+                str(temp_dir / "output"),
+                "-f",
+            ],
+        ):
+            exit_code = main()
+
+        assert exit_code == 0
+        assert (temp_dir / "output" / "src" / "test.txt").exists()
+
+
+class TestExtractCommandEdgeCases:
+    """Test edge cases for extract command."""
+
+    def test_extract_default_output_dir(
+        self, plain_7z_archive: Path, temp_dir: Path, password_manager: PasswordManager
+    ) -> None:
+        """Test extracting with default output directory."""
+        args = argparse.Namespace()
+        args.archive = str(plain_7z_archive)
+        args.output = None
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+        default_output = plain_7z_archive.parent / plain_7z_archive.stem
+        assert (default_output / "src" / "test.txt").exists()
+
+    def test_extract_output_exists_confirm_yes(
+        self, plain_7z_archive: Path, temp_dir: Path, password_manager: PasswordManager, monkeypatch
+    ) -> None:
+        """Test extraction when output exists and user confirms overwrite."""
+        output_dir = temp_dir / "existing_output"
+        output_dir.mkdir()
+        (output_dir / "old_file.txt").write_text("old content")
+
+        args = argparse.Namespace()
+        args.archive = str(plain_7z_archive)
+        args.output = str(output_dir)
+        args.password = None
+        args.force = False
+
+        monkeypatch.setattr("builtins.input", lambda _: "y")
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+        assert (output_dir / "src" / "test.txt").exists()
+        assert not (output_dir / "old_file.txt").exists()
+
+    def test_extract_output_exists_confirm_no(
+        self, plain_7z_archive: Path, temp_dir: Path, password_manager: PasswordManager, monkeypatch
+    ) -> None:
+        """Test extraction when output exists and user cancels."""
+        output_dir = temp_dir / "existing_output"
+        output_dir.mkdir()
+        (output_dir / "old_file.txt").write_text("old content")
+
+        args = argparse.Namespace()
+        args.archive = str(plain_7z_archive)
+        args.output = str(output_dir)
+        args.password = None
+        args.force = False
+
+        monkeypatch.setattr("builtins.input", lambda _: "n")
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 1
+        assert (output_dir / "old_file.txt").exists()
+
+    def test_extract_password_not_found(
+        self, encrypted_7z_archive: Path, temp_dir: Path, password_manager: PasswordManager, capsys
+    ) -> None:
+        """Test extraction when password is not found."""
+        password_manager.add_password("wrong_password")
+
+        args = argparse.Namespace()
+        args.archive = str(encrypted_7z_archive)
+        args.output = str(temp_dir / "output")
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "No matching password found" in captured.err
