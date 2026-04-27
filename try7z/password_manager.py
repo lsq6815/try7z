@@ -125,11 +125,13 @@ class PasswordManager:
             self._passwords = data.get("passwords", [])
         except (json.JSONDecodeError, KeyError, OSError, PasswordManagerError) as e:
             # Back up corrupt file before resetting
-            backup_path = self.passwords_file.with_suffix(".json.bak")
+            backup_path: Path | None = None
             try:
-                self.passwords_file.rename(backup_path)
+                target = self.passwords_file.with_suffix(".json.bak")
+                self.passwords_file.rename(target)
+                backup_path = target
             except OSError:
-                backup_path = None
+                pass
 
             self._passwords = []
             backup_msg = (

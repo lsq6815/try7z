@@ -105,6 +105,19 @@ try7z extract path/to/archive.7z -o output_dir
 try7z extract path/to/archive.7z -p "specific_password"
 ```
 
+### Shell Completion
+
+```bash
+# Print bash completion script to stdout
+try7z autocompletion --shell bash
+
+# Install bash completion (auto-updates ~/.bashrc)
+try7z autocompletion --shell bash --install
+
+# Install PowerShell completion (auto-updates $PROFILE)
+try7z autocompletion --shell pwsh --install
+```
+
 ### Using Python Module
 
 You can also run the tool using Python's module syntax:

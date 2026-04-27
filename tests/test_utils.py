@@ -7,13 +7,13 @@ from unittest.mock import patch
 import pytest
 
 from try7z.utils import (
+    InvalidArchiveError,
     get_package_root,
     get_supported_extensions,
     get_user_data_dir,
     is_supported_archive,
     validate_archive_path,
 )
-from try7z.utils import InvalidArchiveError
 
 
 class TestValidateArchivePath:

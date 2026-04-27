@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from try7z.extractor import Extractor, get_7z_path, get_7z_version
-from try7z.utils import ExtractionError, InvalidArchiveError, PasswordNotFoundError
+from try7z.utils import InvalidArchiveError, PasswordNotFoundError
 
 
 @pytest.fixture

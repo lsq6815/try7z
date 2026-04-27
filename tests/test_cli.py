@@ -2,18 +2,17 @@
 
 import argparse
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-import sys
-from unittest.mock import patch
-
 from try7z.extractor import get_7z_path, get_7z_version
 from try7z.main import (
     cmd_add_password,
+    cmd_autocompletion,
     cmd_clear_passwords,
     cmd_edit_passwords,
     cmd_extract,
@@ -664,3 +663,219 @@ class TestExtractCommandEdgeCases:
         assert exit_code == 1
         captured = capsys.readouterr()
         assert "No matching password found" in captured.err
+
+
+class TestAutocompletionCommand:
+    """Test cases for autocompletion command."""
+
+    def test_autocompletion_bash_stdout(self, capsys) -> None:
+        """Test generating bash completion script to stdout."""
+        args = argparse.Namespace()
+        args.shell = "bash"
+        args.install = False
+
+        exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "_try7z_completion" in captured.out
+        assert "complete -F _try7z_completion try7z" in captured.out
+
+    def test_autocompletion_pwsh_stdout(self, capsys) -> None:
+        """Test generating pwsh completion script to stdout."""
+        args = argparse.Namespace()
+        args.shell = "pwsh"
+        args.install = False
+
+        exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "Register-ArgumentCompleter" in captured.out
+        assert "try7z" in captured.out
+
+    def test_autocompletion_bash_install(self, temp_dir: Path, capsys) -> None:
+        """Test installing bash completion script."""
+        bashrc = temp_dir / ".bashrc"
+        completion_file = temp_dir / ".try7z-completion.bash"
+
+        with patch("try7z.completions._get_bashrc_path", return_value=bashrc):
+            with patch(
+                "try7z.completions.Path.home", return_value=temp_dir
+            ):
+                args = argparse.Namespace()
+                args.shell = "bash"
+                args.install = True
+
+                exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        assert completion_file.exists()
+        assert "_try7z_completion" in completion_file.read_text()
+        assert bashrc.exists()
+        assert ".try7z-completion.bash" in bashrc.read_text()
+        captured = capsys.readouterr()
+        assert "installed" in captured.out
+        assert "bashrc" in captured.out
+
+    def test_autocompletion_pwsh_install(self, temp_dir: Path, capsys) -> None:
+        """Test installing pwsh completion script."""
+        profile = temp_dir / "profile.ps1"
+
+        with patch(
+            "try7z.completions._get_pwsh_profile_path", return_value=profile
+        ):
+            args = argparse.Namespace()
+            args.shell = "pwsh"
+            args.install = True
+
+            exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        assert profile.exists()
+        assert "Register-ArgumentCompleter" in profile.read_text()
+        captured = capsys.readouterr()
+        assert "installed" in captured.out
+        assert "PowerShell" in captured.out
+
+    def test_autocompletion_unsupported_shell(self, capsys) -> None:
+        """Test error for unsupported shell."""
+        args = argparse.Namespace()
+        args.shell = "fish"
+        args.install = False
+
+        exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "Unsupported shell" in captured.err
+
+    def test_main_autocompletion_command(self, capsys) -> None:
+        """Test autocompletion command through main()."""
+        with patch.object(
+            sys, "argv", ["try7z", "autocompletion", "--shell", "bash"]
+        ):
+            exit_code = main()
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "_try7z_completion" in captured.out
+
+    def test_autocompletion_bash_install_existing_bashrc(
+        self, temp_dir: Path, capsys
+    ) -> None:
+        """Test installing bash completion when .bashrc already exists."""
+        bashrc = temp_dir / ".bashrc"
+        bashrc.write_text("# existing bashrc\n", encoding="utf-8")
+        completion_file = temp_dir / ".try7z-completion.bash"
+
+        with patch("try7z.completions._get_bashrc_path", return_value=bashrc):
+            with patch(
+                "try7z.completions.Path.home", return_value=temp_dir
+            ):
+                args = argparse.Namespace()
+                args.shell = "bash"
+                args.install = True
+
+                exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        content = bashrc.read_text(encoding="utf-8")
+        assert "# existing bashrc" in content
+        assert ".try7z-completion.bash" in content
+        assert completion_file.exists()
+        captured = capsys.readouterr()
+        assert "installed" in captured.out
+
+    def test_autocompletion_bash_install_duplicate_source(
+        self, temp_dir: Path, capsys
+    ) -> None:
+        """Test that duplicate source lines are not added to .bashrc."""
+        bashrc = temp_dir / ".bashrc"
+        bashrc.write_text("# bashrc\n", encoding="utf-8")
+
+        with patch("try7z.completions._get_bashrc_path", return_value=bashrc):
+            with patch(
+                "try7z.completions.Path.home", return_value=temp_dir
+            ):
+                args = argparse.Namespace()
+                args.shell = "bash"
+                args.install = True
+
+                # Install twice
+                cmd_autocompletion(args)
+                exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        content = bashrc.read_text(encoding="utf-8")
+        # source_line appears twice per install (once in -f, once in source)
+        assert content.count("# try7z shell completion") == 1
+
+    def test_autocompletion_pwsh_install_existing_profile(
+        self, temp_dir: Path, capsys
+    ) -> None:
+        """Test installing pwsh completion when profile already exists."""
+        profile = temp_dir / "profile.ps1"
+        profile.write_text("# existing profile\n", encoding="utf-8")
+
+        with patch(
+            "try7z.completions._get_pwsh_profile_path", return_value=profile
+        ):
+            args = argparse.Namespace()
+            args.shell = "pwsh"
+            args.install = True
+
+            exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        content = profile.read_text(encoding="utf-8")
+        assert "# existing profile" in content
+        assert "Register-ArgumentCompleter" in content
+        captured = capsys.readouterr()
+        assert "installed" in captured.out
+
+    def test_autocompletion_pwsh_install_replace_existing(
+        self, temp_dir: Path, capsys
+    ) -> None:
+        """Test replacing existing pwsh completion script."""
+        profile = temp_dir / "profile.ps1"
+        profile.write_text(
+            "# profile\n# try7z PowerShell completion script\n"
+            "Register-ArgumentCompleter -Native -CommandName try7z "
+            "-ScriptBlock {\n    param($wordToComplete)\n}\n# other\n",
+            encoding="utf-8",
+        )
+
+        with patch(
+            "try7z.completions._get_pwsh_profile_path", return_value=profile
+        ):
+            args = argparse.Namespace()
+            args.shell = "pwsh"
+            args.install = True
+
+            exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 0
+        content = profile.read_text(encoding="utf-8")
+        assert "# profile" in content
+        assert content.count("try7z PowerShell completion script") == 1
+        assert "# other" in content
+        captured = capsys.readouterr()
+        assert "installed" in captured.out
+
+    def test_autocompletion_install_error(self, capsys) -> None:
+        """Test handling of install errors."""
+        with patch(
+            "try7z.main.install_completion",
+            side_effect=OSError("Permission denied"),
+        ):
+            args = argparse.Namespace()
+            args.shell = "bash"
+            args.install = True
+
+            exit_code = cmd_autocompletion(args)
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "Error installing completion" in captured.err
+        assert "Permission denied" in captured.err

@@ -12,6 +12,7 @@ Commands:
     path: Show the location of the passwords file
     edit: Open the passwords file in the default editor
     extract: Extract an archive using stored passwords
+    autocompletion: Generate shell completion script
 
 Usage:
     Basic command structure::
@@ -53,6 +54,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 from try7z import __build_date__, __version__
+from try7z.completions import (
+    generate_bash_completion,
+    generate_pwsh_completion,
+    install_completion,
+)
 from try7z.extractor import Extractor, get_7z_version
 from try7z.password_manager import PasswordManager
 from try7z.utils import PasswordNotFoundError, Try7zError
@@ -487,6 +493,63 @@ def cmd_extract(
         return 1
 
 
+def cmd_autocompletion(args: argparse.Namespace) -> int:
+    """Generate or install shell completion script.
+
+    Generates completion scripts for bash or PowerShell. When --install
+    is used, installs the script to the shell's configuration directory.
+
+    Args:
+        args: Parsed command line arguments. Expected attributes:
+            - shell: Target shell ("bash" or "pwsh")
+            - install: Whether to install instead of printing to stdout
+
+    Returns:
+        Exit code (0 on success, 1 on error).
+
+    Example:
+        Print bash completion script::
+
+            >>> args = argparse.Namespace()
+            >>> args.shell = "bash"
+            >>> args.install = False
+            >>> cmd_autocompletion(args)
+            0
+
+        Install PowerShell completion::
+
+            >>> args.shell = "pwsh"
+            >>> args.install = True
+            >>> cmd_autocompletion(args)
+            0
+    """
+    shell: str = args.shell
+
+    if shell == "bash":
+        script = generate_bash_completion()
+    elif shell == "pwsh":
+        script = generate_pwsh_completion()
+    else:
+        print(f"Error: Unsupported shell '{shell}'. Use 'bash' or 'pwsh'.", file=sys.stderr)
+        return 1
+
+    if args.install:
+        try:
+            install_completion(shell)
+            print(f"Completion script installed for {shell}.")
+            if shell == "bash":
+                print("Run 'source ~/.bashrc' or restart your terminal to activate.")
+            elif shell == "pwsh":
+                print("Restart PowerShell or run '. $PROFILE' to activate.")
+        except (OSError, ValueError) as e:
+            print(f"Error installing completion: {e}", file=sys.stderr)
+            return 1
+    else:
+        print(script, end="")
+
+    return 0
+
+
 def main() -> int:
     """Main entry point for the CLI application.
 
@@ -564,6 +627,22 @@ def main() -> int:
         help="Overwrite output directory without confirmation",
     )
     extract_parser.set_defaults(func=cmd_extract)
+
+    completion_parser = subparsers.add_parser(
+        "autocompletion", help="Generate shell completion script"
+    )
+    completion_parser.add_argument(
+        "--shell",
+        choices=["bash", "pwsh"],
+        required=True,
+        help="Target shell for completion script",
+    )
+    completion_parser.add_argument(
+        "--install",
+        action="store_true",
+        help="Install completion script to shell configuration",
+    )
+    completion_parser.set_defaults(func=cmd_autocompletion)
 
     args = parser.parse_args()
 
