@@ -23,6 +23,11 @@ classifiers = [
     "Topic :: System :: Archiving",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest-cov>=4.0.0",
+]
+
 [project.scripts]
 try7z = "try7z.main:main"
 
@@ -48,3 +53,23 @@ warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = [
+    "--cov=try7z",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+[tool.coverage.run]
+source = ["try7z"]
+omit = [
+    "tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"

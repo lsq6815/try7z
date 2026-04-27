@@ -84,8 +84,14 @@ try7z/
 # Development
 python -m try7z <command> [options]
 
-# Tests
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Tests (auto-enables coverage, outputs terminal summary + HTML report)
 pytest
+
+# View HTML coverage report
+# Open htmlcov/index.html
 
 # Lint + Type check
 ruff check .
