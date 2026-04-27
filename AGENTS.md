@@ -62,6 +62,7 @@ try7z/
 - **Docstrings**: Google-style, with `>>>` doctests in public APIs
 - **Password indices**: 1-based in CLI, 0-based internally
 - **Progress bars**: `tqdm` for extraction progress (`-bsp1` 7-Zip flag)
+- **Commit messages**: Follow Conventional Commits (see CONTRIBUTING.md); format is `<type>[optional scope]: <description>` in imperative mood
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
@@ -70,6 +71,10 @@ try7z/
 - **Do NOT** add runtime dependencies — production has zero deps (only `tqdm` currently)
 - **Do NOT** store passwords encrypted — intentional plain-text JSON for user editing
 - **Do NOT** forget full build after updating `7z.exe` — setuptools caches in `build/`
+- **Do NOT** commit with non-Conventional Commits format — e.g., `Update file` or `Fix bug` without type prefix
+- **Do NOT** use `BREAKING CHANGE` without `!` marker in the type prefix — both markers must be present
+- **Do NOT** omit `BREAKING CHANGE:` footer when introducing breaking changes — footer is required even with `!` marker
+- **Do NOT** use past tense in commit descriptions — use imperative mood (`add`, `fix`, not `added`, `fixed`)
 
 ## UNIQUE STYLES
 
