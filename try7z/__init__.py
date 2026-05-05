@@ -32,7 +32,7 @@ Attributes:
     __build_date__: The build/compilation date.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 __version__ = "0.5.0"
-__build_date__ = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+__build_date__ = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
