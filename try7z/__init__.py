@@ -33,6 +33,7 @@ Attributes:
 """
 
 from datetime import datetime, timezone
+from importlib.metadata import version
 
-__version__ = "0.5.0"
+__version__ = version("try7z")
 __build_date__ = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
