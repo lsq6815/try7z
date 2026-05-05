@@ -214,6 +214,54 @@ Required for the new close() behavior fix on Windows.
 5. Run linting: `ruff check .`
 6. Run type checking: `mypy try7z/`
 
+## Releasing (Maintainers Only)
+
+This project uses [commitizen](https://commitizen-tools.github.io/commitizen/) to automate version bumping, changelog generation, and tag creation.
+
+### Prerequisites
+
+```bash
+pip install -e ".[dev]"
+```
+
+### Release Workflow
+
+```bash
+# 1. Preview what the next version will be
+cz bump --dry-run
+
+# 2. Bump version (updates pyproject.toml, appends to CHANGELOG.md, creates annotated tag)
+cz bump
+
+# 3. Push the new tag
+git push --follow-tags origin master
+```
+
+### SemVer Mapping
+
+| Commit Type / Marker | Version Bump | Example |
+|---------------------|--------------|---------|
+| `fix` | `PATCH` (0.5.1) | Bug fix release |
+| `feat` | `MINOR` (0.6.0) | New feature release |
+| `BREAKING CHANGE` | `MAJOR` (1.0.0) | Breaking change release |
+| Other types | No bump | Docs, tests, style, etc. |
+
+### Commit Message Hook
+
+A `commit-msg` hook is installed via [pre-commit](https://pre-commit.com/). It validates that every commit message follows the Conventional Commits format before the commit is created.
+
+If the hook rejects your message, amend it:
+
+```bash
+git commit --amend
+```
+
+To bypass the hook in emergencies (not recommended):
+
+```bash
+git commit --no-verify -m "..."
+```
+
 ## Questions?
 
 If you're unsure about the correct type or scope for your change, open an issue to discuss before submitting your PR.
