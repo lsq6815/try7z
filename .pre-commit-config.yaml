@@ -1,8 +1,16 @@
 repos:
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.15.0
+  - repo: local
     hooks:
       - id: commitizen
+        name: conventional commit check
+        entry: cz check --commit-msg-file
+        language: system
         stages: [commit-msg]
+        pass_filenames: true
       - id: commitizen-branch
+        name: conventional commit branch check
+        entry: cz check --rev-range origin/master..HEAD
+        language: system
         stages: [pre-push]
+        pass_filenames: false
+        always_run: true
