@@ -1,20 +1,13 @@
 """Tests for PasswordManager."""
 
 import json
-import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from try7z.password_manager import PasswordManager
 from try7z.utils import PasswordManagerError
-
-
-@pytest.fixture
-def temp_dir() -> Path:
-    """Create a temporary directory for testing."""
-    with tempfile.TemporaryDirectory() as d:
-        yield Path(d)
 
 
 @pytest.fixture
@@ -186,3 +179,53 @@ class TestRemoveByIndex:
         # Create new instance to verify persistence
         manager2 = PasswordManager(data_dir=manager.data_dir)
         assert "test" not in manager2.get_passwords()
+
+
+class TestEdgeCases:
+    """Test edge cases for PasswordManager."""
+
+    def test_add_empty_string_password(self, manager: PasswordManager) -> None:
+        """Test adding empty string password (current behavior)."""
+        manager.add_password("")
+        assert "" in manager.get_passwords()
+        assert manager.count() == 1
+
+    def test_add_whitespace_only_password(self, manager: PasswordManager) -> None:
+        """Test adding whitespace-only password."""
+        manager.add_password("   ")
+        assert "   " in manager.get_passwords()
+
+    def test_add_very_long_password(self, manager: PasswordManager) -> None:
+        """Test adding very long password."""
+        long_pwd = "a" * 10000
+        manager.add_password(long_pwd)
+        assert long_pwd in manager.get_passwords()
+
+    def test_concurrent_access_simulation(self, temp_dir: Path) -> None:
+        """Simulate concurrent access by multiple manager instances."""
+        manager1 = PasswordManager(data_dir=temp_dir)
+        manager1.add_password("password1")
+
+        manager2 = PasswordManager(data_dir=temp_dir)
+        manager2.add_password("password2")
+
+        # Verify persistence via a fresh instance
+        manager3 = PasswordManager(data_dir=temp_dir)
+        passwords = manager3.get_passwords()
+        assert "password1" in passwords
+        assert "password2" in passwords
+
+    def test_permission_error_on_load(self, temp_dir: Path) -> None:
+        """Test handling permission error when loading passwords file."""
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text('{"passwords": ["test"]}')
+
+        with patch("pathlib.Path.read_text", side_effect=PermissionError("Access denied")):
+            with pytest.raises(PasswordManagerError):
+                PasswordManager(data_dir=temp_dir)
+
+    def test_permission_error_on_save(self, manager: PasswordManager) -> None:
+        """Test handling permission error when saving passwords."""
+        with patch("pathlib.Path.write_text", side_effect=PermissionError("Access denied")):
+            with pytest.raises(PermissionError):
+                manager.add_password("new_password")

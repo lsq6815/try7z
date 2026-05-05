@@ -3,13 +3,12 @@
 import argparse
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from try7z.extractor import get_7z_path, get_7z_version
+from try7z.extractor import get_7z_version
 from try7z.main import (
     cmd_add_password,
     cmd_autocompletion,
@@ -25,54 +24,9 @@ from try7z.password_manager import PasswordManager
 
 
 @pytest.fixture
-def temp_dir() -> Path:
-    """Create a temporary directory for testing."""
-    with tempfile.TemporaryDirectory() as d:
-        yield Path(d)
-
-
-@pytest.fixture
 def password_manager(temp_dir: Path) -> PasswordManager:
     """Create a PasswordManager with temporary directory."""
     return PasswordManager(data_dir=temp_dir)
-
-
-@pytest.fixture
-def seven_zip() -> Path:
-    """Get path to 7z executable."""
-    return get_7z_path()
-
-
-@pytest.fixture
-def plain_7z_archive(temp_dir: Path, seven_zip: Path) -> Path:
-    """Create a plain (non-encrypted) 7z archive for testing."""
-    src_dir = temp_dir / "src"
-    src_dir.mkdir()
-    (src_dir / "test.txt").write_text("Hello, World!")
-
-    archive_path = temp_dir / "plain.7z"
-    subprocess.run(
-        [str(seven_zip), "a", str(archive_path), str(src_dir)],
-        capture_output=True,
-        check=True,
-    )
-    return archive_path
-
-
-@pytest.fixture
-def encrypted_7z_archive(temp_dir: Path, seven_zip: Path) -> Path:
-    """Create an encrypted 7z archive for testing."""
-    src_dir = temp_dir / "src"
-    src_dir.mkdir()
-    (src_dir / "test.txt").write_text("Secret content!")
-
-    archive_path = temp_dir / "encrypted.7z"
-    subprocess.run(
-        [str(seven_zip), "a", "-psecret123", "-mhe=on", str(archive_path), str(src_dir)],
-        capture_output=True,
-        check=True,
-    )
-    return archive_path
 
 
 class TestAddCommand:
@@ -93,7 +47,6 @@ class TestAddCommand:
     def test_add_password_default_manager(self, capsys, monkeypatch) -> None:
         """Test adding password with default manager (manager=None)."""
         import tempfile
-        from pathlib import Path
 
         with tempfile.TemporaryDirectory() as d:
             data_dir = Path(d)
@@ -317,7 +270,6 @@ class TestListCommand:
     def test_list_empty_default_manager(self, capsys, monkeypatch) -> None:
         """Test listing with default manager when empty."""
         import tempfile
-        from pathlib import Path
 
         with tempfile.TemporaryDirectory() as d:
             data_dir = Path(d)
@@ -426,6 +378,36 @@ class TestEditCommand:
         assert exit_code == 1
         captured = capsys.readouterr()
         assert "Error opening file" in captured.err
+
+    def test_edit_opens_file_macos(self, password_manager: PasswordManager) -> None:
+        """Test that edit command opens file on macOS."""
+        args = argparse.Namespace()
+        password_manager.passwords_file.touch(exist_ok=True)
+
+        with patch("os.name", "posix"):
+            with patch("sys.platform", "darwin"):
+                with patch("subprocess.run") as mock_run:
+                    exit_code = cmd_edit_passwords(args, password_manager)
+
+        assert exit_code == 0
+        mock_run.assert_called_once_with(
+            ["open", str(password_manager.passwords_file)], check=True
+        )
+
+    def test_edit_opens_file_linux(self, password_manager: PasswordManager) -> None:
+        """Test that edit command opens file on Linux."""
+        args = argparse.Namespace()
+        password_manager.passwords_file.touch(exist_ok=True)
+
+        with patch("os.name", "posix"):
+            with patch("sys.platform", "linux"):
+                with patch("subprocess.run") as mock_run:
+                    exit_code = cmd_edit_passwords(args, password_manager)
+
+        assert exit_code == 0
+        mock_run.assert_called_once_with(
+            ["xdg-open", str(password_manager.passwords_file)], check=True
+        )
 
 
 class TestExtractCommand:
@@ -582,6 +564,47 @@ class TestMain:
 
         assert exit_code == 0
         assert (temp_dir / "output" / "src" / "test.txt").exists()
+
+    def test_main_list_command(self, capsys) -> None:
+        """Test that list command works through main()."""
+        with patch.object(sys, "argv", ["try7z", "list"]):
+            with patch(
+                "try7z.main.PasswordManager"
+            ) as mock_manager_class:
+                mock_manager = mock_manager_class.return_value
+                mock_manager.count.return_value = 0
+                mock_manager.get_passwords.return_value = []
+                exit_code = main()
+
+        assert exit_code == 0
+
+    def test_main_path_command(self, capsys) -> None:
+        """Test that path command works through main()."""
+        with patch.object(sys, "argv", ["try7z", "path"]):
+            with patch(
+                "try7z.main.PasswordManager"
+            ) as mock_manager_class:
+                mock_manager = mock_manager_class.return_value
+                mock_manager.passwords_file = Path("/fake/path/passwords.json")
+                exit_code = main()
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "passwords.json" in captured.out
+
+    def test_main_remove_command(self, capsys) -> None:
+        """Test that remove command works through main()."""
+        with patch.object(
+            sys, "argv", ["try7z", "remove", "testpassword"]
+        ):
+            with patch(
+                "try7z.main.PasswordManager"
+            ) as mock_manager_class:
+                mock_manager = mock_manager_class.return_value
+                mock_manager.get_passwords.return_value = ["testpassword"]
+                exit_code = main()
+
+        assert exit_code == 0
 
 
 class TestExtractCommandEdgeCases:
