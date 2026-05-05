@@ -51,8 +51,32 @@ Example:
 
 import json
 from pathlib import Path
+from typing import Protocol, runtime_checkable
 
 from try7z.utils import PasswordManagerError, get_user_data_dir
+
+
+@runtime_checkable
+class PasswordStore(Protocol):
+    """Protocol defining the interface for password storage backends.
+
+    Implementations of this protocol provide methods to manage a list
+    of passwords with persistent storage capabilities.
+
+    Example:
+        >>> from try7z.password_manager import PasswordManager, PasswordStore
+        >>> pm: PasswordStore = PasswordManager()
+        >>> pm.add_password("secret")
+        >>> pm.count()
+        1
+    """
+
+    def add_password(self, password: str) -> None: ...
+    def remove_password(self, password: str) -> None: ...
+    def remove_by_index(self, index: int) -> str: ...
+    def get_passwords(self) -> list[str]: ...
+    def clear_passwords(self) -> None: ...
+    def count(self) -> int: ...
 
 
 class PasswordManager:

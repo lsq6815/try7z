@@ -162,8 +162,7 @@ def get_user_data_dir() -> Path:
         Callers should ensure the directory exists before using it.
     """
     if sys.platform == "win32":
-        app_data = os.environ.get("APPDATA")
-        if app_data:
+        if app_data := os.environ.get("APPDATA"):
             return Path(app_data) / "try7z"
         return Path.home() / "AppData" / "Roaming" / "try7z"
     elif sys.platform == "darwin":
@@ -227,6 +226,13 @@ def validate_archive_path(archive_path: Path) -> Path:
     return archive_path
 
 
+SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({".7z", ".zip", ".rar"})
+"""Set of supported archive file extensions.
+
+All extensions are lowercase and include the leading dot.
+"""
+
+
 def get_supported_extensions() -> set[str]:
     """Return set of supported archive extensions.
 
@@ -245,7 +251,7 @@ def get_supported_extensions() -> set[str]:
         >>> ".7z" in exts
         True
     """
-    return {".7z", ".zip", ".rar"}
+    return set(SUPPORTED_EXTENSIONS)
 
 
 def is_supported_archive(file_path: Path) -> bool:
@@ -271,4 +277,4 @@ def is_supported_archive(file_path: Path) -> bool:
         >>> is_supported_archive(Path("document.txt"))
         False
     """
-    return file_path.suffix.lower() in get_supported_extensions()
+    return file_path.suffix.lower() in SUPPORTED_EXTENSIONS

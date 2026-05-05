@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from try7z.utils import (
+    SUPPORTED_EXTENSIONS,
     InvalidArchiveError,
     get_package_root,
     get_supported_extensions,
@@ -58,15 +59,23 @@ class TestGetUserDataDir:
                 assert result == Path("/home/test/.local/share/try7z")
 
 
-class TestGetSupportedExtensions:
-    """Test cases for get_supported_extensions."""
+class TestSupportedExtensions:
+    """Test cases for supported archive extensions."""
+
+    def test_supported_extensions_constant(self) -> None:
+        """Test that the constant contains expected extensions."""
+        assert ".7z" in SUPPORTED_EXTENSIONS
+        assert ".zip" in SUPPORTED_EXTENSIONS
+        assert ".rar" in SUPPORTED_EXTENSIONS
+        assert isinstance(SUPPORTED_EXTENSIONS, frozenset)
 
     def test_get_supported_extensions(self) -> None:
-        """Test that supported extensions are returned."""
+        """Test that get_supported_extensions returns expected values."""
         exts = get_supported_extensions()
         assert ".7z" in exts
         assert ".zip" in exts
         assert ".rar" in exts
+        assert exts == set(SUPPORTED_EXTENSIONS)
 
 
 class TestIsSupportedArchive:
