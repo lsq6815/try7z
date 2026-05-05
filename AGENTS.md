@@ -1,7 +1,7 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-04-27
-**Commit:** 0f2bc28
+**Generated:** 2026-04-28
+**Commit:** d541eb7
 **Branch:** master
 
 ## OVERVIEW
@@ -14,17 +14,23 @@ Python 3.10+ CLI frontend for 7-Zip. Manages a password list and auto-extracts p
 try7z/
 ├── try7z/              # Main package
 │   ├── main.py         # CLI entry (argparse), all command handlers
+│   ├── completions.py  # Shell completion generation and installation
 │   ├── extractor.py    # Archive extraction via bundled 7z.exe
 │   ├── password_manager.py  # JSON password storage
 │   ├── utils.py        # Exceptions, path helpers, archive validation
-│   └── lib/win-x64/7z.exe   # Bundled binary (Windows x64)
+│   └── lib/win-x64/    # Bundled binaries (Windows x64)
+│       ├── 7z.exe
+│       ├── 7z.dll
+│       └── 7-zip.dll
 ├── tests/              # pytest suite
 │   ├── test_cli.py
 │   ├── test_extractor.py
-│   └── test_password_manager.py
+│   ├── test_password_manager.py
+│   └── test_utils.py
 ├── docs/               # Sphinx docs (RTD theme)
 │   ├── conf.py
 │   ├── index.rst
+│   ├── modules.rst
 │   └── build.py        # Pure-Python build script
 └── pyproject.toml      # setuptools config, ruff/mypy/pytest settings
 ```
@@ -34,6 +40,7 @@ try7z/
 | Task | Location | Notes |
 |------|----------|-------|
 | Add CLI command | `try7z/main.py` | Add subparser + handler function |
+| Add shell completion | `try7z/completions.py` | Completion script generation/install |
 | Modify extraction logic | `try7z/extractor.py` | `Extractor` class, `_extract_with_password` |
 | Change password storage | `try7z/password_manager.py` | `PasswordManager` class |
 | Add exception type | `try7z/utils.py` | Inherit from `Try7zError` |
@@ -44,13 +51,17 @@ try7z/
 
 | Symbol | Type | Location | Role |
 |--------|------|----------|------|
-| `main` | function | `try7z/main.py:491` | CLI entry point, argparse setup |
-| `cmd_extract` | function | `try7z/main.py:383` | Archive extraction handler |
+| `main` | function | `try7z/main.py:560` | CLI entry point, argparse setup |
+| `cmd_extract` | function | `try7z/main.py:390` | Archive extraction handler |
+| `cmd_autocompletion` | function | `try7z/main.py:497` | Shell completion handler |
 | `Extractor` | class | `try7z/extractor.py:120` | 7-Zip wrapper, password brute-force |
 | `try_extract` | method | `try7z/extractor.py:214` | Returns `(success, password)` |
+| `_get_archive_file_count` | method | `try7z/extractor.py:182` | Internal file count for progress bar |
+| `_extract_with_progress` | method | `try7z/extractor.py:419` | Internal tqdm progress extraction |
 | `extract_with_passwords` | method | `try7z/extractor.py:554` | Raises `PasswordNotFoundError` on failure |
 | `PasswordManager` | class | `try7z/password_manager.py:58` | JSON read/write |
 | `get_7z_path` | function | `try7z/extractor.py:55` | Platform-specific binary resolution |
+| `get_7z_version` | function | `try7z/extractor.py:91` | Returns 7-Zip version string |
 | `get_user_data_dir` | function | `try7z/utils.py:139` | `%APPDATA%/try7z` on Windows |
 | `validate_archive_path` | function | `try7z/utils.py:193` | Exists + is_file check |
 
