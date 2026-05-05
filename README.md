@@ -50,8 +50,7 @@ try7z -v
 ### Development Installation
 
 ```bash
-pip install -e .
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 ```
 
 ## Usage
@@ -184,8 +183,6 @@ try7z/
 │   └── build.py
 ├── pyproject.toml             # Package configuration
 ├── MANIFEST.in                # Package data includes
-├── requirements.txt
-├── requirements-dev.txt
 ├── README.md
 └── AGENTS.md
 ```

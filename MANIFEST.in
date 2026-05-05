@@ -1,5 +1,3 @@
 include README.md
 include LICENSE
-include requirements.txt
-include requirements-dev.txt
 recursive-include try7z/lib *

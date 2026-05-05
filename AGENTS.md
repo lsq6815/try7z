@@ -32,7 +32,7 @@ try7z/
 │   ├── index.rst
 │   ├── modules.rst
 │   └── build.py        # Pure-Python build script
-└── pyproject.toml      # setuptools config, ruff/mypy/pytest settings
+└── pyproject.toml      # setuptools config, ruff/mypy/pytest settings, dependencies
 ```
 
 ## WHERE TO LOOK
