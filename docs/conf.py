@@ -14,8 +14,13 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'try7z'
 copyright = '2026, Author'
 author = 'Author'
-release = '0.5.0'
-version = '0.5.0'
+try:
+    from try7z import __version__
+    release = __version__
+    version = __version__
+except ImportError:
+    release = '0.5.1'
+    version = '0.5.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

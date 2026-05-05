@@ -102,6 +102,10 @@ try7z extract path/to/archive.7z -o output_dir
 
 # Try an additional password first
 try7z extract path/to/archive.7z -p "specific_password"
+
+# Force overwrite existing output directory without confirmation
+try7z extract path/to/archive.7z -f
+try7z extract path/to/archive.7z -o output_dir -f
 ```
 
 ### Shell Completion
