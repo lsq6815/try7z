@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "try7z"
-version = "0.5.0"
+version = "0.5.1"
 description = "A 7-Zip frontend for auto-extracting password-protected archives"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -83,7 +83,7 @@ skip_covered = false
 directory = "htmlcov"
 
 [tool.commitizen]
-version = "0.5.0"
+version = "0.5.1"
 version_files = [
     "pyproject.toml:version",
 ]

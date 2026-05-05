@@ -1,3 +1,9 @@
+## v0.5.1 (2026-05-05)
+
+### Refactor
+
+- read version dynamically from package metadata
+
 ## v0.5.0 (2026-05-05)
 
 ### BREAKING CHANGE
