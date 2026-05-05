@@ -436,7 +436,7 @@ class TestExtractCommand:
     ) -> None:
         """Test extracting a plain 7z archive via CLI."""
         args = argparse.Namespace()
-        args.archive = str(plain_7z_archive)
+        args.archive = [str(plain_7z_archive)]
         args.output = str(temp_dir / "output")
         args.password = None
         args.force = True
@@ -455,7 +455,7 @@ class TestExtractCommand:
         password_manager.add_password("secret123")
 
         args = argparse.Namespace()
-        args.archive = str(encrypted_7z_archive)
+        args.archive = [str(encrypted_7z_archive)]
         args.output = str(temp_dir / "output")
         args.password = None
         args.force = True
@@ -472,7 +472,7 @@ class TestExtractCommand:
     ) -> None:
         """Test extracting with a priority password."""
         args = argparse.Namespace()
-        args.archive = str(encrypted_7z_archive)
+        args.archive = [str(encrypted_7z_archive)]
         args.output = str(temp_dir / "output")
         args.password = "secret123"
         args.force = True
@@ -488,7 +488,7 @@ class TestExtractCommand:
         invalid_file.write_text("not an archive")
 
         args = argparse.Namespace()
-        args.archive = str(invalid_file)
+        args.archive = [str(invalid_file)]
         args.output = None
         args.password = None
         args.force = False
@@ -502,7 +502,7 @@ class TestExtractCommand:
     def test_extract_nonexistent_file(self, temp_dir: Path, capsys) -> None:
         """Test extracting a nonexistent file."""
         args = argparse.Namespace()
-        args.archive = str(temp_dir / "missing.7z")
+        args.archive = [str(temp_dir / "missing.7z")]
         args.output = None
         args.password = None
         args.force = False
@@ -592,7 +592,7 @@ class TestExtractCommandEdgeCases:
     ) -> None:
         """Test extracting with default output directory."""
         args = argparse.Namespace()
-        args.archive = str(plain_7z_archive)
+        args.archive = [str(plain_7z_archive)]
         args.output = None
         args.password = None
         args.force = True
@@ -612,7 +612,7 @@ class TestExtractCommandEdgeCases:
         (output_dir / "old_file.txt").write_text("old content")
 
         args = argparse.Namespace()
-        args.archive = str(plain_7z_archive)
+        args.archive = [str(plain_7z_archive)]
         args.output = str(output_dir)
         args.password = None
         args.force = False
@@ -634,7 +634,7 @@ class TestExtractCommandEdgeCases:
         (output_dir / "old_file.txt").write_text("old content")
 
         args = argparse.Namespace()
-        args.archive = str(plain_7z_archive)
+        args.archive = [str(plain_7z_archive)]
         args.output = str(output_dir)
         args.password = None
         args.force = False
@@ -653,7 +653,7 @@ class TestExtractCommandEdgeCases:
         password_manager.add_password("wrong_password")
 
         args = argparse.Namespace()
-        args.archive = str(encrypted_7z_archive)
+        args.archive = [str(encrypted_7z_archive)]
         args.output = str(temp_dir / "output")
         args.password = None
         args.force = True
@@ -663,6 +663,103 @@ class TestExtractCommandEdgeCases:
         assert exit_code == 1
         captured = capsys.readouterr()
         assert "No matching password found" in captured.err
+
+    def test_extract_multiple_archives_all_success(
+        self,
+        plain_7z_archive: Path,
+        temp_dir: Path,
+        password_manager: PasswordManager,
+        capsys,
+        seven_zip: Path,
+    ) -> None:
+        """Test extracting multiple archives all succeeding."""
+        # Create a second plain archive to avoid fixture conflicts
+        src2 = temp_dir / "src2"
+        src2.mkdir()
+        (src2 / "test.txt").write_text("Second archive")
+        archive2 = temp_dir / "second.7z"
+        subprocess.run(
+            [str(seven_zip), "a", str(archive2), str(src2)],
+            capture_output=True,
+            check=True,
+        )
+
+        args = argparse.Namespace()
+        args.archive = [str(plain_7z_archive), str(archive2)]
+        args.output = str(temp_dir / "output")
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "Summary: 2 succeeded, 0 failed" in captured.out
+        assert (temp_dir / "output" / "plain" / "src" / "test.txt").exists()
+        assert (temp_dir / "output" / "second" / "src2" / "test.txt").exists()
+
+    def test_extract_multiple_archives_partial_failure(
+        self,
+        plain_7z_archive: Path,
+        temp_dir: Path,
+        password_manager: PasswordManager,
+        capsys,
+        seven_zip: Path,
+    ) -> None:
+        """Test extracting multiple archives with partial failure."""
+        # Create an encrypted archive that will fail (no password stored)
+        src2 = temp_dir / "src2"
+        src2.mkdir()
+        (src2 / "test.txt").write_text("Secret content")
+        archive2 = temp_dir / "secret.7z"
+        subprocess.run(
+            [str(seven_zip), "a", "-psecret123", "-mhe=on", str(archive2), str(src2)],
+            capture_output=True,
+            check=True,
+        )
+
+        args = argparse.Namespace()
+        args.archive = [str(plain_7z_archive), str(archive2)]
+        args.output = str(temp_dir / "output")
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "Summary: 1 succeeded, 1 failed" in captured.out
+        assert (temp_dir / "output" / "plain" / "src" / "test.txt").exists()
+
+    def test_extract_multiple_archives_default_output_dir(
+        self,
+        plain_7z_archive: Path,
+        temp_dir: Path,
+        password_manager: PasswordManager,
+        seven_zip: Path,
+    ) -> None:
+        """Test extracting multiple archives without -o option."""
+        src2 = temp_dir / "src2"
+        src2.mkdir()
+        (src2 / "test.txt").write_text("Second archive")
+        archive2 = temp_dir / "second.7z"
+        subprocess.run(
+            [str(seven_zip), "a", str(archive2), str(src2)],
+            capture_output=True,
+            check=True,
+        )
+
+        args = argparse.Namespace()
+        args.archive = [str(plain_7z_archive), str(archive2)]
+        args.output = None
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+        assert (plain_7z_archive.parent / "plain" / "src" / "test.txt").exists()
+        assert (archive2.parent / "second" / "src2" / "test.txt").exists()
 
 
 class TestAutocompletionCommand:

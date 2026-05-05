@@ -387,63 +387,21 @@ def cmd_edit_passwords(
         return 1
 
 
-def cmd_extract(
-    args: argparse.Namespace,
-    manager: PasswordManager | None = None,
+def _extract_single(
+    archive_path: Path,
+    output_dir: Path,
+    passwords: list[str],
+    force: bool,
 ) -> int:
-    """Extract an archive using stored passwords.
-
-    Extracts a password-protected archive by trying all stored
-    passwords (plus an optional additional password). Reports
-    success or failure to the user.
-
-    Args:
-        args: Parsed command line arguments. Expected attributes:
-            - archive: Path to the archive file
-            - output: Optional output directory path
-            - password: Optional additional password to try first
-        manager: Optional PasswordManager instance for testing.
-                If None, creates a new instance.
-
-    Returns:
-        Exit code (0 on success, 1 on error).
-
-    Example:
-        Basic extraction::
-
-            >>> args = argparse.Namespace()
-            >>> args.archive = "secret.7z"
-            >>> args.output = None
-            >>> args.password = None
-            >>> cmd_extract(args)
-            Attempting to extract: secret.7z
-            Trying 5 password(s)...
-            Success! Extracted with password.
-            0
-
-        With custom output and priority password::
-
-            >>> args.output = "./extracted"
-            >>> args.password = "try_this_first"
-            >>> cmd_extract(args)
-    """
-    archive_path = Path(args.archive)
-
+    """Extract a single archive and return exit code."""
     try:
         extractor = Extractor(archive_path)
     except Try7zError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    # Determine output directory
-    if args.output:
-        output_dir = Path(args.output)
-    else:
-        output_dir = archive_path.parent / archive_path.stem
-    output_dir = output_dir.resolve()
-
     # Check if output directory exists
-    if output_dir.exists() and not args.force:
+    if output_dir.exists() and not force:
         item_type = "directory" if output_dir.is_dir() else "file"
         confirm = input(
             f"Output {item_type} '{output_dir.name}' already exists. Overwrite? [y/N]: "
@@ -457,13 +415,6 @@ def cmd_extract(
             shutil.rmtree(output_dir)
         else:
             output_dir.unlink()
-
-    if manager is None:
-        manager = PasswordManager()
-    passwords = manager.get_passwords()
-
-    if args.password:
-        passwords = [args.password] + passwords
 
     print(f"Attempting to extract: {archive_path.name}")
     print(f"Trying {len(passwords)} password(s)...")
@@ -480,7 +431,6 @@ def cmd_extract(
                 print("Success! Archive was not password-protected.")
 
             print(f"Extracted to: {output_dir}")
-
             return 0
         else:
             print("Extraction failed.", file=sys.stderr)
@@ -492,6 +442,84 @@ def cmd_extract(
     except Try7zError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
+
+
+def cmd_extract(
+    args: argparse.Namespace,
+    manager: PasswordManager | None = None,
+) -> int:
+    """Extract archive(s) using stored passwords.
+
+    Extracts password-protected archive(s) by trying all stored
+    passwords (plus an optional additional password). Reports
+    success or failure to the user.
+
+    Args:
+        args: Parsed command line arguments. Expected attributes:
+            - archive: List of paths to archive files
+            - output: Optional output directory path
+            - password: Optional additional password to try first
+            - force: Boolean indicating whether to skip overwrite confirmation
+        manager: Optional PasswordManager instance for testing.
+                If None, creates a new instance.
+
+    Returns:
+        Exit code (0 on success, 1 on error).
+
+    Example:
+        Basic extraction::
+
+            >>> args = argparse.Namespace()
+            >>> args.archive = ["secret.7z"]
+            >>> args.output = None
+            >>> args.password = None
+            >>> args.force = False
+            >>> cmd_extract(args)
+            Attempting to extract: secret.7z
+            Trying 5 password(s)...
+            Success! Extracted with password.
+            0
+
+        With custom output and priority password::
+
+            >>> args.output = "./extracted"
+            >>> args.password = "try_this_first"
+            >>> cmd_extract(args)
+    """
+    if manager is None:
+        manager = PasswordManager()
+    passwords = manager.get_passwords()
+
+    if args.password:
+        passwords = [args.password] + passwords
+
+    success_count = 0
+    failure_count = 0
+    total = len(args.archive)
+
+    for archive_str in args.archive:
+        archive_path = Path(archive_str)
+
+        # Determine output directory
+        if args.output:
+            if total > 1:
+                output_dir = Path(args.output) / archive_path.stem
+            else:
+                output_dir = Path(args.output)
+        else:
+            output_dir = archive_path.parent / archive_path.stem
+        output_dir = output_dir.resolve()
+
+        result = _extract_single(archive_path, output_dir, passwords, args.force)
+        if result == 0:
+            success_count += 1
+        else:
+            failure_count += 1
+
+    if total > 1:
+        print(f"\nSummary: {success_count} succeeded, {failure_count} failed")
+
+    return 0 if failure_count == 0 else 1
 
 
 def cmd_autocompletion(args: argparse.Namespace) -> int:
@@ -623,8 +651,8 @@ def main() -> int:
     edit_parser = subparsers.add_parser("edit", help="Open passwords file in default editor")
     edit_parser.set_defaults(func=cmd_edit_passwords)
 
-    extract_parser = subparsers.add_parser("extract", help="Extract an archive")
-    extract_parser.add_argument("archive", help="Path to archive file")
+    extract_parser = subparsers.add_parser("extract", help="Extract archive(s)")
+    extract_parser.add_argument("archive", nargs="+", help="Path to archive file(s)")
     extract_parser.add_argument("-o", "--output", help="Output directory")
     extract_parser.add_argument("-p", "--password", help="Additional password to try first")
     extract_parser.add_argument(
