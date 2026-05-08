@@ -96,17 +96,23 @@ def cmd_add_password(
 
     added_count = 0
     skipped_count = 0
+    added_passwords: list[str] = []
 
     for password in args.passwords:
         try:
             manager.add_password(password)
             added_count += 1
+            added_passwords.append(password)
         except Try7zError:
             print(f"Warning: Password '{password}' already exists", file=sys.stderr)
             skipped_count += 1
 
     if added_count > 0:
-        print(f"Added {added_count} password(s). Total: {manager.count()}")
+        display_passwords = added_passwords[:5]
+        password_list = ", ".join(f"'{p}'" for p in display_passwords)
+        if len(added_passwords) > 5:
+            password_list += f", and {len(added_passwords) - 5} more"
+        print(f"Added {added_count} password(s): {password_list}. Total: {manager.count()}")
     if skipped_count > 0:
         print(f"Skipped {skipped_count} duplicate(s)")
 
@@ -257,8 +263,10 @@ def cmd_list_passwords(
         return 0
 
     print(f"Stored passwords ({manager.count()}):")
+    max_display_len = max(40, shutil.get_terminal_size().columns - 10)
     for i, pw in enumerate(passwords, 1):
-        print(f"  {i}. {pw}")
+        display_pw = pw if len(pw) <= max_display_len else pw[: max_display_len - 3] + "..."
+        print(f"  {i}. {display_pw}")
 
     return 0
 
@@ -401,20 +409,26 @@ def _extract_single(
         return 1
 
     # Check if output directory exists
-    if output_dir.exists() and not force:
+    if output_dir.exists():
         item_type = "directory" if output_dir.is_dir() else "file"
-        confirm = input(
-            f"Output {item_type} '{output_dir.name}' already exists. Overwrite? [y/N]: "
-        )
-        if confirm.lower() != "y":
-            print("Extraction cancelled.")
-            return 1
-
-        # Remove existing directory/file
-        if output_dir.is_dir():
-            shutil.rmtree(output_dir)
+        if force:
+            print(
+                f"Warning: Output {item_type} '{output_dir.name}' already exists "
+                "and will be overwritten."
+            )
         else:
-            output_dir.unlink()
+            confirm = input(
+                f"Output {item_type} '{output_dir.name}' already exists. Overwrite? [y/N]: "
+            )
+            if confirm.lower() != "y":
+                print("Extraction cancelled.")
+                return 1
+
+            # Remove existing directory/file
+            if output_dir.is_dir():
+                shutil.rmtree(output_dir)
+            else:
+                output_dir.unlink()
 
     print(f"Attempting to extract: {archive_path.name}")
     print(f"Trying {len(passwords)} password(s)...")
