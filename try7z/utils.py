@@ -248,8 +248,9 @@ def get_user_data_dir() -> Path:
         WindowsPath('C:/Users/Username/AppData/Roaming/try7z')
 
     Note:
-        This directory is NOT automatically created by this function.
-        Callers should ensure the directory exists before using it.
+        This function returns the path only and does not create the
+        directory. Components that use this path (such as PasswordManager)
+        are responsible for creating the directory when needed.
     """
     if sys.platform == "win32":
         if app_data := os.environ.get("APPDATA"):

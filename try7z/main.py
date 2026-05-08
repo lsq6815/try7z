@@ -65,6 +65,18 @@ from try7z.password_manager import PasswordManager
 from try7z.utils import PasswordNotFoundError, PasswordValidationError, Try7zError
 
 
+def _get_password_manager() -> PasswordManager:
+    """Factory function for creating PasswordManager instances.
+
+    Centralizes PasswordManager instantiation so that the storage backend
+    can be swapped without modifying every command handler.
+
+    Returns:
+        A new PasswordManager instance using the default configuration.
+    """
+    return PasswordManager()
+
+
 def cmd_add_password(
     args: argparse.Namespace,
     manager: PasswordManager | None = None,
@@ -93,7 +105,7 @@ def cmd_add_password(
         0
     """
     if manager is None:
-        manager = PasswordManager()
+        manager = _get_password_manager()
 
     added_count = 0
     skipped_count = 0
@@ -164,7 +176,7 @@ def cmd_remove_password(
             0
     """
     if manager is None:
-        manager = PasswordManager()
+        manager = _get_password_manager()
 
     # Validate: cannot use both methods
     if args.password and args.index:
@@ -259,7 +271,7 @@ def cmd_list_passwords(
         0
     """
     if manager is None:
-        manager = PasswordManager()
+        manager = _get_password_manager()
     passwords = manager.get_passwords()
 
     if not passwords:
@@ -315,7 +327,7 @@ def cmd_clear_passwords(
             return 0
 
     if manager is None:
-        manager = PasswordManager()
+        manager = _get_password_manager()
     manager.clear_passwords()
     print("All passwords cleared.")
     return 0
@@ -345,7 +357,7 @@ def cmd_show_path(
         0
     """
     if manager is None:
-        manager = PasswordManager()
+        manager = _get_password_manager()
     print(manager.passwords_file)
     return 0
 
@@ -379,7 +391,7 @@ def cmd_edit_passwords(
         0
     """
     if manager is None:
-        manager = PasswordManager()
+        manager = _get_password_manager()
     passwords_file = str(manager.passwords_file)
 
     # Ensure file exists
@@ -399,6 +411,85 @@ def cmd_edit_passwords(
         return 1
 
 
+def _build_password_list(
+    manager: PasswordManager, priority_password: str | None = None
+) -> list[str]:
+    """Build the password list from stored passwords and optional priority password.
+
+    Args:
+        manager: PasswordManager instance to retrieve stored passwords from.
+        priority_password: Optional password to try first before stored passwords.
+
+    Returns:
+        List of passwords to try, with priority password first if provided.
+    """
+    passwords = manager.get_passwords()
+    if priority_password:
+        passwords = [priority_password] + passwords
+    return passwords
+
+
+def _resolve_output_dir(
+    archive_path: Path,
+    output_base: str | None = None,
+    use_subdirectory: bool = False,
+) -> Path:
+    """Resolve the output directory for an archive extraction.
+
+    Args:
+        archive_path: Path to the archive file.
+        output_base: Optional base output directory path.
+        use_subdirectory: Whether to create a subdirectory named after the archive
+                         when output_base is provided (used for multi-archive extraction).
+
+    Returns:
+        Resolved absolute path for the output directory.
+    """
+    if output_base:
+        output_dir = Path(output_base)
+        if use_subdirectory:
+            output_dir = output_dir / archive_path.stem
+    else:
+        output_dir = archive_path.parent / archive_path.stem
+    return output_dir.resolve()
+
+
+def _handle_existing_output(output_dir: Path, force: bool) -> bool:
+    """Handle existing output directory/file during extraction.
+
+    Args:
+        output_dir: Path to the output directory or file.
+        force: Whether to overwrite without confirmation.
+
+    Returns:
+        True if extraction should proceed, False if cancelled by user.
+    """
+    if not output_dir.exists():
+        return True
+
+    item_type = "directory" if output_dir.is_dir() else "file"
+    if force:
+        print(
+            f"Warning: Output {item_type} '{output_dir.name}' already exists "
+            "and will be overwritten."
+        )
+        return True
+
+    confirm = input(
+        f"Output {item_type} '{output_dir.name}' already exists. Overwrite? [y/N]: "
+    )
+    if confirm.lower() != "y":
+        print("Extraction cancelled.")
+        return False
+
+    # Remove existing directory/file
+    if output_dir.is_dir():
+        shutil.rmtree(output_dir)
+    else:
+        output_dir.unlink()
+    return True
+
+
 def _extract_single(
     archive_path: Path,
     output_dir: Path,
@@ -412,27 +503,8 @@ def _extract_single(
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    # Check if output directory exists
-    if output_dir.exists():
-        item_type = "directory" if output_dir.is_dir() else "file"
-        if force:
-            print(
-                f"Warning: Output {item_type} '{output_dir.name}' already exists "
-                "and will be overwritten."
-            )
-        else:
-            confirm = input(
-                f"Output {item_type} '{output_dir.name}' already exists. Overwrite? [y/N]: "
-            )
-            if confirm.lower() != "y":
-                print("Extraction cancelled.")
-                return 1
-
-            # Remove existing directory/file
-            if output_dir.is_dir():
-                shutil.rmtree(output_dir)
-            else:
-                output_dir.unlink()
+    if not _handle_existing_output(output_dir, force):
+        return 1
 
     print(f"Attempting to extract: {archive_path.name}")
     print(f"Trying {len(passwords)} password(s)...")
@@ -505,11 +577,9 @@ def cmd_extract(
             >>> cmd_extract(args)
     """
     if manager is None:
-        manager = PasswordManager()
-    passwords = manager.get_passwords()
+        manager = _get_password_manager()
 
-    if args.password:
-        passwords = [args.password] + passwords
+    passwords = _build_password_list(manager, args.password)
 
     success_count = 0
     failure_count = 0
@@ -517,16 +587,9 @@ def cmd_extract(
 
     for archive_str in args.archive:
         archive_path = Path(archive_str)
-
-        # Determine output directory
-        if args.output:
-            if total > 1:
-                output_dir = Path(args.output) / archive_path.stem
-            else:
-                output_dir = Path(args.output)
-        else:
-            output_dir = archive_path.parent / archive_path.stem
-        output_dir = output_dir.resolve()
+        output_dir = _resolve_output_dir(
+            archive_path, args.output, use_subdirectory=(total > 1)
+        )
 
         result = _extract_single(archive_path, output_dir, passwords, args.force)
         if result == 0:
