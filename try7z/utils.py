@@ -8,6 +8,7 @@ Exception Hierarchy:
 * Try7zError (base)
 
   * PasswordManagerError
+  * PasswordValidationError
   * ExtractionError
 
     * InvalidArchiveError
