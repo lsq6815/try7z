@@ -35,6 +35,7 @@ Example:
 
 import os
 import sys
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 
@@ -53,6 +54,93 @@ class Try7zError(Exception):
     """
 
     pass
+
+
+class PasswordValidationError(Try7zError):
+    """Exception raised when password validation fails.
+
+    This exception indicates that a password does not meet
+    the required validation criteria.
+
+    Example:
+        >>> from try7z.utils import BasicPasswordValidator, PasswordValidationError
+        >>> validator = BasicPasswordValidator()
+        >>> try:
+        ...     validator.validate("")
+        ... except PasswordValidationError as e:
+        ...     print(e)  # "Password cannot be empty"
+    """
+
+    pass
+
+
+class PasswordValidator(ABC):
+    """Abstract base class for password validation strategies.
+
+    Implementations define specific validation rules by implementing
+    the validate() method.
+
+    Example:
+        >>> from try7z.utils import PasswordValidator, PasswordValidationError
+        >>> class CustomValidator(PasswordValidator):
+        ...     def validate(self, password: str) -> None:
+        ...         if len(password) < 5:
+        ...             raise PasswordValidationError("Too short")
+    """
+
+    @abstractmethod
+    def validate(self, password: str) -> None:
+        """Validate password against implementation-specific rules.
+
+        Args:
+            password: Password string to validate.
+
+        Raises:
+            PasswordValidationError: If password fails validation.
+        """
+        pass
+
+
+class BasicPasswordValidator(PasswordValidator):
+    """Basic password validator with common validation rules.
+
+    Validates:
+        - Password is not empty
+
+    Note:
+        Additional validations (whitespace-only, max length) will be added
+        in future updates.
+
+    Attributes:
+        MAX_LENGTH: Maximum allowed password length (1000 characters).
+
+    Example:
+        >>> from try7z.utils import BasicPasswordValidator, PasswordValidationError
+        >>> validator = BasicPasswordValidator()
+        >>> validator.validate("valid_password")  # No exception raised
+        >>> try:
+        ...     validator.validate("")
+        ... except PasswordValidationError:
+        ...     print("Invalid password")
+    """
+
+    MAX_LENGTH = 1000
+
+    def validate(self, password: str) -> None:
+        """Validate password against basic rules.
+
+        Args:
+            password: Password string to validate.
+
+        Raises:
+            PasswordValidationError: If password is empty.
+
+        Note:
+            Additional validations (whitespace-only, max length) will be added
+            in future updates.
+        """
+        if not password:
+            raise PasswordValidationError("Password cannot be empty")
 
 
 class PasswordManagerError(Try7zError):

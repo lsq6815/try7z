@@ -108,6 +108,18 @@ class TestGetPackageRoot:
         assert (root / "utils.py").exists()
 
 
+class TestBasicPasswordValidator:
+    """Test cases for BasicPasswordValidator."""
+
+    def test_validate_empty_string(self) -> None:
+        """Test that empty string raises PasswordValidationError."""
+        from try7z.utils import BasicPasswordValidator, PasswordValidationError
+
+        validator = BasicPasswordValidator()
+        with pytest.raises(PasswordValidationError, match="cannot be empty"):
+            validator.validate("")
+
+
 @pytest.fixture
 def temp_dir() -> Path:
     """Create a temporary directory for testing."""
