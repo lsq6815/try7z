@@ -53,7 +53,12 @@ import json
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from try7z.utils import PasswordManagerError, get_user_data_dir
+from try7z.utils import (
+    BasicPasswordValidator,
+    PasswordManagerError,
+    PasswordValidator,
+    get_user_data_dir,
+)
 
 
 @runtime_checkable
@@ -71,7 +76,9 @@ class PasswordStore(Protocol):
         1
     """
 
-    def add_password(self, password: str) -> None: ...
+    def add_password(
+        self, password: str, validator: PasswordValidator | None = None
+    ) -> None: ...
     def remove_password(self, password: str) -> None: ...
     def remove_by_index(self, index: int) -> str: ...
     def get_passwords(self) -> list[str]: ...
@@ -177,7 +184,11 @@ class PasswordManager:
         data = {"passwords": self._passwords}
         self.passwords_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    def add_password(self, password: str) -> None:
+    def add_password(
+        self,
+        password: str,
+        validator: PasswordValidator | None = None
+    ) -> None:
         """Add a password to the list.
 
         Adds a new password to the stored list and saves to disk.
@@ -185,8 +196,11 @@ class PasswordManager:
 
         Args:
             password: The password string to add.
+            validator: Optional validator instance. If None, uses
+                      BasicPasswordValidator().
 
         Raises:
+            PasswordValidationError: If password validation fails.
             PasswordManagerError: If the password already exists in the list.
 
         Example:
@@ -199,6 +213,11 @@ class PasswordManager:
                 ...
             try7z.utils.PasswordManagerError: Password already exists
         """
+        if validator is None:
+            validator = BasicPasswordValidator()
+
+        validator.validate(password)
+
         if password in self._passwords:
             raise PasswordManagerError("Password already exists")
 

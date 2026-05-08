@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from try7z.password_manager import PasswordManager
-from try7z.utils import PasswordManagerError
+from try7z.utils import PasswordManagerError, PasswordValidationError
 
 
 @pytest.fixture
@@ -185,21 +185,20 @@ class TestEdgeCases:
     """Test edge cases for PasswordManager."""
 
     def test_add_empty_string_password(self, manager: PasswordManager) -> None:
-        """Test adding empty string password (current behavior)."""
-        manager.add_password("")
-        assert "" in manager.get_passwords()
-        assert manager.count() == 1
+        """Test adding empty string password now raises validation error."""
+        with pytest.raises(PasswordValidationError, match="cannot be empty"):
+            manager.add_password("")
 
     def test_add_whitespace_only_password(self, manager: PasswordManager) -> None:
-        """Test adding whitespace-only password."""
-        manager.add_password("   ")
-        assert "   " in manager.get_passwords()
+        """Test adding whitespace-only password now raises validation error."""
+        with pytest.raises(PasswordValidationError, match="whitespace-only"):
+            manager.add_password("   ")
 
     def test_add_very_long_password(self, manager: PasswordManager) -> None:
-        """Test adding very long password."""
-        long_pwd = "a" * 10000
-        manager.add_password(long_pwd)
-        assert long_pwd in manager.get_passwords()
+        """Test adding very long password now raises validation error."""
+        long_pwd = "a" * 10001
+        with pytest.raises(PasswordValidationError, match="exceeds maximum length"):
+            manager.add_password(long_pwd)
 
     def test_concurrent_access_simulation(self, temp_dir: Path) -> None:
         """Simulate concurrent access by multiple manager instances."""
@@ -229,3 +228,39 @@ class TestEdgeCases:
         with patch("pathlib.Path.write_text", side_effect=PermissionError("Access denied")):
             with pytest.raises(PermissionError):
                 manager.add_password("new_password")
+
+
+class TestPasswordManagerWithValidator:
+    """Test cases for PasswordManager with custom validators."""
+
+    def test_add_password_with_custom_validator(
+        self, manager: PasswordManager
+    ) -> None:
+        """Test adding password with custom validator."""
+        from try7z.utils import PasswordValidationError, PasswordValidator
+
+        class MinLengthValidator(PasswordValidator):
+            def __init__(self, min_length: int = 5):
+                self.min_length = min_length
+
+            def validate(self, password: str) -> None:
+                if len(password) < self.min_length:
+                    raise PasswordValidationError(
+                        f"Password must be at least {self.min_length} characters"
+                    )
+
+        # Short password should fail with custom validator
+        with pytest.raises(PasswordValidationError, match="at least 5"):
+            manager.add_password("abc", validator=MinLengthValidator())
+
+        # Valid password should pass
+        manager.add_password("abcdef", validator=MinLengthValidator())
+        assert "abcdef" in manager.get_passwords()
+
+    def test_add_password_default_uses_basic_validator(
+        self, manager: PasswordManager
+    ) -> None:
+        """Test that default validator is BasicPasswordValidator."""
+        # Empty string should be rejected by default
+        with pytest.raises(PasswordValidationError, match="cannot be empty"):
+            manager.add_password("")
