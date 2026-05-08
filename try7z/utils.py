@@ -107,10 +107,8 @@ class BasicPasswordValidator(PasswordValidator):
 
     Validates:
         - Password is not empty
-
-    Note:
-        Additional validations (whitespace-only, max length) will be added
-        in future updates.
+        - Password is not whitespace-only
+        - Password does not exceed maximum length
 
     Attributes:
         MAX_LENGTH: Maximum allowed password length (1000 characters).
@@ -134,14 +132,17 @@ class BasicPasswordValidator(PasswordValidator):
             password: Password string to validate.
 
         Raises:
-            PasswordValidationError: If password is empty.
-
-        Note:
-            Additional validations (whitespace-only, max length) will be added
-            in future updates.
+            PasswordValidationError: If password is empty, whitespace-only,
+                or exceeds maximum length.
         """
         if not password:
             raise PasswordValidationError("Password cannot be empty")
+        if password.isspace():
+            raise PasswordValidationError("Password cannot be whitespace-only")
+        if len(password) > self.MAX_LENGTH:
+            raise PasswordValidationError(
+                f"Password exceeds maximum length of {self.MAX_LENGTH} characters"
+            )
 
 
 class PasswordManagerError(Try7zError):

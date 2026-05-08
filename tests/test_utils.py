@@ -8,7 +8,9 @@ import pytest
 
 from try7z.utils import (
     SUPPORTED_EXTENSIONS,
+    BasicPasswordValidator,
     InvalidArchiveError,
+    PasswordValidationError,
     get_package_root,
     get_supported_extensions,
     get_user_data_dir,
@@ -113,11 +115,39 @@ class TestBasicPasswordValidator:
 
     def test_validate_empty_string(self) -> None:
         """Test that empty string raises PasswordValidationError."""
-        from try7z.utils import BasicPasswordValidator, PasswordValidationError
-
         validator = BasicPasswordValidator()
         with pytest.raises(PasswordValidationError, match="cannot be empty"):
             validator.validate("")
+
+    def test_validate_whitespace_only(self) -> None:
+        """Test that whitespace-only password raises error."""
+        validator = BasicPasswordValidator()
+        with pytest.raises(PasswordValidationError, match="whitespace-only"):
+            validator.validate("   ")
+
+    def test_validate_whitespace_tabs_newlines(self) -> None:
+        """Test that mixed whitespace raises error."""
+        validator = BasicPasswordValidator()
+        with pytest.raises(PasswordValidationError, match="whitespace-only"):
+            validator.validate("  \t\n  ")
+
+    def test_validate_max_length_exceeded(self) -> None:
+        """Test that password exceeding max length raises error."""
+        validator = BasicPasswordValidator()
+        long_password = "a" * 1001
+        with pytest.raises(PasswordValidationError, match="exceeds maximum length"):
+            validator.validate(long_password)
+
+    def test_validate_max_length_exactly_1000(self) -> None:
+        """Test that password exactly 1000 chars is valid."""
+        validator = BasicPasswordValidator()
+        password_1000 = "a" * 1000
+        validator.validate(password_1000)  # Should not raise
+
+    def test_validate_valid_password(self) -> None:
+        """Test that valid password passes validation."""
+        validator = BasicPasswordValidator()
+        validator.validate("valid_password123")  # Should not raise
 
 
 @pytest.fixture
