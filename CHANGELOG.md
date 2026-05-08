@@ -1,3 +1,22 @@
+## v0.6.0 (2026-05-08)
+
+### Feat
+
+- add PasswordValidationError handling to CLI
+- integrate PasswordValidator into PasswordManager.add_password()
+- add whitespace and max length validation to BasicPasswordValidator
+- add PasswordValidator ABC and BasicPasswordValidator with empty check
+- improve user experience from optimization report
+- **extract**: support multiple archive arguments
+
+### Fix
+
+- update exception hierarchy in module docstring
+
+### Refactor
+
+- apply modern Python practices from optimization report
+
 ## v0.5.1 (2026-05-05)
 
 ### Refactor
