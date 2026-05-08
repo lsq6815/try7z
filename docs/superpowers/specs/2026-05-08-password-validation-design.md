@@ -174,8 +174,8 @@ manager.add_password("my_password")
 # Custom validation
 manager.add_password("pwd123", validator=StrictPasswordValidator())
 
-# No validation (for internal/testing use)
-manager.add_password("test", validator=None)  # Would need NoOpValidator
+# Disable validation for testing (requires NoOpValidator - future enhancement)
+# manager.add_password("test", validator=NoOpValidator())
 ```
 
 ## Testing Strategy
