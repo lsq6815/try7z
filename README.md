@@ -7,6 +7,7 @@ A 7-Zip frontend application for automatically extracting password-protected arc
 - Manage password list (add, remove, list, clear)
 - Automatically try multiple passwords for archive extraction
 - Support for `.7z`, `.zip`, `.rar` formats
+- Extract multiple archives in one command
 - Bundled 7-Zip executable - no external dependencies
 
 ## Installation
@@ -97,8 +98,14 @@ try7z clear -f
 # Extract an archive using stored passwords
 try7z extract path/to/archive.7z
 
+# Extract multiple archives at once
+try7z extract archive1.7z archive2.zip archive3.rar
+
 # Extract with custom output directory
 try7z extract path/to/archive.7z -o output_dir
+
+# Extract multiple archives to a common output directory
+try7z extract archive1.7z archive2.zip -o output_dir
 
 # Try an additional password first
 try7z extract path/to/archive.7z -p "specific_password"
