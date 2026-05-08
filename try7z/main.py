@@ -51,7 +51,9 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 from try7z import __build_date__, __version__
 from try7z.completions import (
@@ -65,6 +67,36 @@ from try7z.password_manager import PasswordManager
 from try7z.utils import PasswordNotFoundError, PasswordValidationError, Try7zError
 
 
+@dataclass
+class RemovalResult:
+    """Result of a password removal operation.
+
+    Attributes:
+        removed_count: Number of passwords successfully removed.
+        failures: List of failure messages for items that could not be removed.
+        success_messages: List of success messages for removed items.
+    """
+
+    removed_count: int
+    failures: list[str]
+    success_messages: list[str]
+
+
+class RemovalStrategy(Protocol):
+    """Protocol for password removal strategies."""
+
+    def execute(self, manager: PasswordManager) -> RemovalResult:
+        """Execute the removal strategy.
+
+        Args:
+            manager: PasswordManager instance to operate on.
+
+        Returns:
+            RemovalResult containing operation outcome.
+        """
+        ...
+
+
 def _get_password_manager() -> PasswordManager:
     """Factory function for creating PasswordManager instances.
 
@@ -75,6 +107,93 @@ def _get_password_manager() -> PasswordManager:
         A new PasswordManager instance using the default configuration.
     """
     return PasswordManager()
+
+
+class RemoveByValueStrategy:
+    """Remove passwords by their string value.
+
+    Deduplicates the password list while preserving order, then attempts
+    to remove each password from the manager.
+    """
+
+    def __init__(self, passwords: list[str]) -> None:
+        """Initialize with list of passwords to remove.
+
+        Args:
+            passwords: List of password strings to remove.
+        """
+        self.passwords = list(dict.fromkeys(passwords))
+
+    def execute(self, manager: PasswordManager) -> RemovalResult:
+        """Execute removal by value.
+
+        Args:
+            manager: PasswordManager instance to remove passwords from.
+
+        Returns:
+            RemovalResult with operation outcome.
+        """
+        result = RemovalResult(0, [], [])
+        for pwd in self.passwords:
+            try:
+                manager.remove_password(pwd)
+                result.success_messages.append(f"Removed: {pwd}")
+                result.removed_count += 1
+            except Try7zError:
+                result.failures.append(f"Password '{pwd}' not found")
+        return result
+
+
+class RemoveByIndexStrategy:
+    """Remove passwords by their 1-based index.
+
+    Deduplicates indices, converts to 0-based, sorts in descending order
+    to avoid index shifting during removal.
+    """
+
+    def __init__(self, indices: list[int]) -> None:
+        """Initialize with list of 1-based indices to remove.
+
+        Args:
+            indices: List of 1-based indices to remove.
+        """
+        unique = list(dict.fromkeys(indices))
+        self.indices = sorted([i - 1 for i in unique], reverse=True)
+
+    def execute(self, manager: PasswordManager) -> RemovalResult:
+        """Execute removal by index.
+
+        Args:
+            manager: PasswordManager instance to remove passwords from.
+
+        Returns:
+            RemovalResult with operation outcome.
+        """
+        result = RemovalResult(0, [], [])
+        for idx in self.indices:
+            try:
+                removed = manager.remove_by_index(idx)
+                result.success_messages.append(f"Removed [{idx + 1}]: {removed}")
+                result.removed_count += 1
+            except Try7zError:
+                result.failures.append(f"Index {idx + 1} out of range")
+        return result
+
+
+def _report_removal_result(result: RemovalResult, total_count: int) -> None:
+    """Report removal operation results.
+
+    Prints success messages, failure warnings, and summary count.
+
+    Args:
+        result: RemovalResult from strategy execution.
+        total_count: Total passwords remaining after operation.
+    """
+    for msg in result.success_messages:
+        print(f"  {msg}")
+    for failure in result.failures:
+        print(f"Warning: {failure}", file=sys.stderr)
+    print(f"Removed {result.removed_count} password(s). Total: {total_count}")
 
 
 def cmd_add_password(
@@ -188,60 +307,15 @@ def cmd_remove_password(
         print("Error: Please specify password(s) or use --index", file=sys.stderr)
         return 1
 
-    try:
-        if args.index:
-            # Remove by index
-            # Deduplicate while preserving order
-            seen = set()
-            unique_indices = []
-            for idx in args.index:
-                if idx not in seen:
-                    seen.add(idx)
-                    unique_indices.append(idx)
+    strategy: RemovalStrategy
+    if args.index:
+        strategy = RemoveByIndexStrategy(args.index)
+    else:
+        strategy = RemoveByValueStrategy(args.password)
 
-            # Convert to 0-based and sort (descending to avoid index shifting)
-            indices_0based = sorted([i - 1 for i in unique_indices], reverse=True)
-
-            removed_count = 0
-            failed_indices = []
-
-            for idx in indices_0based:
-                try:
-                    removed_pw = manager.remove_by_index(idx)
-                    print(f"  Removed [{idx + 1}]: {removed_pw}")
-                    removed_count += 1
-                except Try7zError:
-                    failed_indices.append(idx + 1)  # Record 1-based for warning
-
-            # Report warnings in original order
-            for idx in sorted(failed_indices):
-                print(f"Warning: Index {idx} out of range", file=sys.stderr)
-
-            print(f"Removed {removed_count} password(s). Total: {manager.count()}")
-        else:
-            # Remove by password value
-            removed_count = 0
-            failed_passwords = []
-
-            for password in args.password:
-                try:
-                    manager.remove_password(password)
-                    print(f"  Removed: {password}")
-                    removed_count += 1
-                except Try7zError:
-                    failed_passwords.append(password)
-
-            # Report warnings
-            for password in failed_passwords:
-                print(f"Warning: Password '{password}' not found", file=sys.stderr)
-
-            print(f"Removed {removed_count} password(s). Total: {manager.count()}")
-
-        return 0
-
-    except Try7zError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
+    result = strategy.execute(manager)
+    _report_removal_result(result, manager.count())
+    return 0
 
 
 def cmd_list_passwords(

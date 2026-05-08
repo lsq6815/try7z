@@ -10,6 +10,10 @@ import pytest
 
 from try7z.extractor import get_7z_version
 from try7z.main import (
+    RemovalResult,
+    RemoveByIndexStrategy,
+    RemoveByValueStrategy,
+    _report_removal_result,
     cmd_add_password,
     cmd_autocompletion,
     cmd_clear_passwords,
@@ -298,6 +302,124 @@ class TestRemoveCommand:
         assert exit_code == 1
         captured = capsys.readouterr()
         assert "Please specify" in captured.err
+
+
+class TestRemoveByValueStrategy:
+    """Test cases for RemoveByValueStrategy."""
+
+    def test_execute_removes_passwords(self, password_manager: PasswordManager) -> None:
+        """Test removing multiple passwords by value."""
+        password_manager.add_password("pwd1")
+        password_manager.add_password("pwd2")
+
+        strategy = RemoveByValueStrategy(["pwd1", "pwd2"])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 2
+        assert password_manager.count() == 0
+        assert "Removed: pwd1" in result.success_messages
+        assert "Removed: pwd2" in result.success_messages
+
+    def test_execute_deduplicates(self, password_manager: PasswordManager) -> None:
+        """Test that duplicate passwords are deduplicated."""
+        password_manager.add_password("pwd1")
+
+        strategy = RemoveByValueStrategy(["pwd1", "pwd1"])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 1
+        assert len(result.success_messages) == 1
+
+    def test_execute_reports_failures(self, password_manager: PasswordManager) -> None:
+        """Test that non-existent passwords are reported as failures."""
+        strategy = RemoveByValueStrategy(["nonexistent"])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 0
+        assert len(result.failures) == 1
+        assert "not found" in result.failures[0]
+
+    def test_execute_mixed_success_and_failure(self, password_manager: PasswordManager) -> None:
+        """Test mixed success and failure scenarios."""
+        password_manager.add_password("exists")
+
+        strategy = RemoveByValueStrategy(["not_exist", "exists", "also_not_exist"])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 1
+        assert len(result.success_messages) == 1
+        assert len(result.failures) == 2
+
+
+class TestRemoveByIndexStrategy:
+    """Test cases for RemoveByIndexStrategy."""
+
+    def test_execute_removes_by_index(self, password_manager: PasswordManager) -> None:
+        """Test removing passwords by index."""
+        password_manager.add_password("a")
+        password_manager.add_password("b")
+
+        strategy = RemoveByIndexStrategy([1, 2])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 2
+        assert password_manager.count() == 0
+        assert "Removed [1]: a" in result.success_messages
+        assert "Removed [2]: b" in result.success_messages
+
+    def test_execute_deduplicates_and_sorts(self, password_manager: PasswordManager) -> None:
+        """Test that duplicate indices are deduplicated and sorted."""
+        password_manager.add_password("a")
+        password_manager.add_password("b")
+
+        strategy = RemoveByIndexStrategy([2, 2, 1])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 2
+        assert password_manager.count() == 0
+
+    def test_execute_reports_out_of_range(self, password_manager: PasswordManager) -> None:
+        """Test that out-of-range indices are reported as failures."""
+        password_manager.add_password("only")
+
+        strategy = RemoveByIndexStrategy([1, 5])
+        result = strategy.execute(password_manager)
+
+        assert result.removed_count == 1
+        assert len(result.failures) == 1
+        assert "out of range" in result.failures[0]
+
+
+class TestReportRemovalResult:
+    """Test cases for _report_removal_result."""
+
+    def test_reports_success_and_failures(self, capsys) -> None:
+        """Test reporting mixed success and failures."""
+        result = RemovalResult(
+            removed_count=1,
+            failures=["Password 'missing' not found"],
+            success_messages=["Removed: existing"],
+        )
+
+        _report_removal_result(result, 5)
+
+        captured = capsys.readouterr()
+        assert "Removed: existing" in captured.out
+        assert "not found" in captured.err
+        assert "Removed 1 password(s). Total: 5" in captured.out
+
+    def test_reports_no_removals(self, capsys) -> None:
+        """Test reporting when nothing was removed."""
+        result = RemovalResult(
+            removed_count=0,
+            failures=[],
+            success_messages=[],
+        )
+
+        _report_removal_result(result, 0)
+
+        captured = capsys.readouterr()
+        assert "Removed 0 password(s). Total: 0" in captured.out
 
 
 class TestPathCommand:
