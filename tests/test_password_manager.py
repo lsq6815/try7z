@@ -264,3 +264,107 @@ class TestPasswordManagerWithValidator:
         # Empty string should be rejected by default
         with pytest.raises(PasswordValidationError, match="cannot be empty"):
             manager.add_password("")
+
+
+class TestBatchMode:
+    """Test cases for batch/auto_save mode."""
+
+    def test_auto_save_true_writes_immediately(self, temp_dir: Path) -> None:
+        """Test that auto_save=True writes to disk immediately."""
+        pm = PasswordManager(data_dir=temp_dir, auto_save=True)
+        pm.add_password("immediate")
+
+        # Verify by reading file directly
+        data = json.loads(pm.passwords_file.read_text(encoding="utf-8"))
+        assert "immediate" in data["passwords"]
+
+    def test_auto_save_false_defers_writes(self, temp_dir: Path) -> None:
+        """Test that auto_save=False does not write until save() called."""
+        # Create initial file so we can verify it wasn't modified
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text('{"passwords": ["existing"]}', encoding="utf-8")
+
+        pm = PasswordManager(data_dir=temp_dir, auto_save=False)
+        pm.add_password("deferred")
+
+        # File should still only have the original password
+        data = json.loads(pm.passwords_file.read_text(encoding="utf-8"))
+        assert "deferred" not in data["passwords"]
+        assert pm._dirty is True
+
+        pm.save()
+        data = json.loads(pm.passwords_file.read_text(encoding="utf-8"))
+        assert "deferred" in data["passwords"]
+        assert pm._dirty is False
+
+    def test_save_only_when_dirty(self, temp_dir: Path) -> None:
+        """Test that save() only writes when dirty."""
+        pm = PasswordManager(data_dir=temp_dir, auto_save=False)
+
+        # save() with no changes should not raise and should be no-op
+        pm.save()
+        assert pm._dirty is False
+
+    def test_context_manager_auto_saves_on_exit(self, temp_dir: Path) -> None:
+        """Test that context manager saves on successful exit."""
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text('{"passwords": []}', encoding="utf-8")
+
+        with PasswordManager(data_dir=temp_dir, auto_save=True) as pm:
+            pm.add_password("ctx1")
+            pm.add_password("ctx2")
+            # Inside context, auto_save is False
+            data = json.loads(pm.passwords_file.read_text(encoding="utf-8"))
+            assert "ctx1" not in data["passwords"]
+
+        # After exit, should be saved
+        data = json.loads(pm.passwords_file.read_text(encoding="utf-8"))
+        assert "ctx1" in data["passwords"]
+        assert "ctx2" in data["passwords"]
+
+    def test_context_manager_no_save_on_exception(self, temp_dir: Path) -> None:
+        """Test that context manager does not save if exception occurs."""
+        passwords_file = temp_dir / "passwords.json"
+        passwords_file.write_text('{"passwords": []}', encoding="utf-8")
+
+        try:
+            with PasswordManager(data_dir=temp_dir, auto_save=True) as pm:
+                pm.add_password("should_not_persist")
+                raise ValueError(" intentional error")
+        except ValueError:
+            pass
+
+        # Password should not have been saved
+        data = json.loads(pm.passwords_file.read_text(encoding="utf-8"))
+        assert "should_not_persist" not in data["passwords"]
+
+    def test_batch_remove_and_clear(self, temp_dir: Path) -> None:
+        """Test batch remove and clear operations."""
+        pm = PasswordManager(data_dir=temp_dir, auto_save=False)
+        pm.add_password("p1")
+        pm.add_password("p2")
+        pm.add_password("p3")
+        pm.save()
+
+        # Batch remove
+        with PasswordManager(data_dir=temp_dir, auto_save=True) as pm2:
+            pm2.remove_password("p1")
+            pm2.remove_by_index(0)  # removes "p2" after p1 removed
+
+        passwords = pm2.get_passwords()
+        assert passwords == ["p3"]
+
+        # Batch clear
+        with PasswordManager(data_dir=temp_dir, auto_save=True) as pm3:
+            pm3.clear_passwords()
+
+        assert pm3.count() == 0
+        data = json.loads(pm3.passwords_file.read_text(encoding="utf-8"))
+        assert data["passwords"] == []
+
+    def test_reentrance_restores_auto_save(self, temp_dir: Path) -> None:
+        """Test that auto_save state is restored after context manager."""
+        pm = PasswordManager(data_dir=temp_dir, auto_save=True)
+        with pm:
+            assert pm._auto_save is False
+        assert pm._auto_save is True

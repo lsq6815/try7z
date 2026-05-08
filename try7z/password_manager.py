@@ -111,7 +111,9 @@ class PasswordManager:
         ['test123']
     """
 
-    def __init__(self, data_dir: Path | None = None) -> None:
+    def __init__(
+        self, data_dir: Path | None = None, auto_save: bool = True
+    ) -> None:
         """Initialize the password manager.
 
         Creates the data directory if it doesn't exist and loads
@@ -120,6 +122,10 @@ class PasswordManager:
         Args:
             data_dir: Directory for storing passwords. If None, uses
                      the platform-specific user data directory.
+            auto_save: If True (default), every modification triggers
+                      immediate disk write. Set to False for batch
+                      operations and call save() manually, or use the
+                      context manager.
 
         Example:
             >>> # Use default location
@@ -127,12 +133,19 @@ class PasswordManager:
             >>>
             >>> # Use custom location
             >>> pm = PasswordManager(data_dir=Path("/path/to/dir"))
+            >>>
+            >>> # Batch mode: defer writes until exit
+            >>> with PasswordManager(auto_save=False) as pm:
+            ...     pm.add_password("batch1")
+            ...     pm.add_password("batch2")
         """
         self.data_dir = data_dir or get_user_data_dir()
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.passwords_file = self.data_dir / "passwords.json"
         self._passwords: list[str] = []
+        self._auto_save = auto_save
+        self._dirty = False
 
         self._load_passwords()
 
@@ -179,10 +192,11 @@ class PasswordManager:
         """Save passwords to the JSON file.
 
         Internal method called after any modification to persist
-        changes to disk.
+        changes to disk. Resets the dirty flag on success.
         """
         data = {"passwords": self._passwords}
         self.passwords_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        self._dirty = False
 
     def add_password(
         self,
@@ -222,7 +236,9 @@ class PasswordManager:
             raise PasswordManagerError("Password already exists")
 
         self._passwords.append(password)
-        self._save_passwords()
+        self._dirty = True
+        if self._auto_save:
+            self._save_passwords()
 
     def remove_password(self, password: str) -> None:
         """Remove a password from the list by value.
@@ -251,7 +267,9 @@ class PasswordManager:
             raise PasswordManagerError("Password not found")
 
         self._passwords.remove(password)
-        self._save_passwords()
+        self._dirty = True
+        if self._auto_save:
+            self._save_passwords()
 
     def get_passwords(self) -> list[str]:
         """Get a copy of all stored passwords.
@@ -292,7 +310,9 @@ class PasswordManager:
             []
         """
         self._passwords = []
-        self._save_passwords()
+        self._dirty = True
+        if self._auto_save:
+            self._save_passwords()
 
     def count(self) -> int:
         """Get the number of stored passwords.
@@ -344,5 +364,54 @@ class PasswordManager:
             raise PasswordManagerError(f"Index {index + 1} out of range")
 
         removed = self._passwords.pop(index)
-        self._save_passwords()
+        self._dirty = True
+        if self._auto_save:
+            self._save_passwords()
         return removed
+
+    def save(self) -> None:
+        """Explicitly save passwords to disk.
+
+        Useful when auto_save=False for batch operations. Only writes
+        to disk if the password list has been modified since the last
+        save (dirty flag is set).
+
+        Example:
+            >>> pm = PasswordManager(auto_save=False)
+            >>> pm.add_password("batch1")
+            >>> pm.add_password("batch2")
+            >>> pm.save()  # Writes once
+        """
+        if self._dirty:
+            self._save_passwords()
+
+    def __enter__(self) -> "PasswordManager":
+        """Enter batch mode by disabling auto-save.
+
+        Returns:
+            self for use in a with statement.
+
+        Example:
+            >>> with PasswordManager(auto_save=True) as pm:
+            ...     pm.add_password("auto_batch1")
+            ...     pm.add_password("auto_batch2")
+            ... # Exits and automatically saves
+        """
+        self._auto_save = False
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
+        """Exit batch mode: re-enable auto-save and save if no error.
+
+        If an exception occurred inside the with block, the dirty
+        state is left as-is (no save) so partial changes don't
+        persist.
+        """
+        self._auto_save = True
+        if exc_type is None:
+            self.save()
