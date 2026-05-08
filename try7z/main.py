@@ -251,7 +251,7 @@ def cmd_add_password(
     if skipped_count > 0:
         print(f"Skipped {skipped_count} invalid/duplicate password(s)")
 
-    return 0 if added_count > 0 else 1
+    return 0
 
 
 def cmd_remove_password(

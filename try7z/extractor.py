@@ -39,8 +39,11 @@ Example:
 
 import platform
 import re
+import shutil
 import subprocess
 from pathlib import Path
+
+from tqdm import tqdm
 
 from try7z.utils import (
     ExtractionError,
@@ -211,6 +214,50 @@ class Extractor:
             pass
         return None
 
+    def _try_passwords(
+        self,
+        output_dir: Path,
+        passwords_to_try: list[str | None],
+        show_password_progress: bool = False,
+    ) -> tuple[bool, str | None, int]:
+        """Try extracting with each password until one works.
+
+        Iterates through the password list, attempting extraction with
+        each one. Returns immediately on first success.
+
+        Args:
+            output_dir: Directory to extract files to.
+            passwords_to_try: List of passwords to try (None for no password).
+            show_password_progress: Whether to display progress messages.
+
+        Returns:
+            Tuple of (success, used_password, attempts_count):
+            - success: True if a password worked
+            - used_password: The password that worked, or None
+            - attempts_count: Number of passwords tried before success
+                             (or total count if none worked)
+
+        Raises:
+            ExtractionError: If extraction fails for non-password reasons.
+        """
+        for i, password in enumerate(passwords_to_try):
+            if show_password_progress:
+                print(
+                    f"\rTrying password {i + 1}/{len(passwords_to_try)}...",
+                    end="",
+                    flush=True,
+                )
+
+            try:
+                if self._extract_with_password(output_dir, password, show_progress=False):
+                    return True, password, i + 1
+            except ExtractionError:
+                raise
+            except Exception:
+                continue
+
+        return False, None, len(passwords_to_try)
+
     def try_extract(
         self,
         output_dir: Path | None = None,
@@ -279,45 +326,22 @@ class Extractor:
 
         success = False
         used_password = None
-        password_progress_shown = False
 
         try:
             if show_progress:
                 # Two-phase extraction with progress bar:
                 # Phase 1: Find correct password without showing progress
-                correct_password = None
-                found_success = False
-                total_passwords = len(passwords_to_try)
-
-                for i, password in enumerate(passwords_to_try):
-                    # Show password progress if enabled
-                    if show_password_progress:
-                        progress_msg = f"Trying password {i + 1}/{total_passwords}..."
-                        print(f"\r{progress_msg}", end="", flush=True)
-                        password_progress_shown = True
-
-                    try:
-                        if self._extract_with_password(output_dir, password, show_progress=False):
-                            correct_password = password
-                            found_success = True
-                            break
-                    except ExtractionError:
-                        raise
-                    except Exception:
-                        continue
+                found_success, correct_password, attempts = self._try_passwords(
+                    output_dir, passwords_to_try, show_password_progress
+                )
 
                 # Phase 2: If found and progress requested, re-extract with progress
                 if found_success:
-                    # Show how many tries it took to find the password
-                    if password_progress_shown:
-                        tries_count = i + 1
-                        # Move to new line and show success message
-                        print(f"\nFound after {tries_count} trie(s)!")
-                    # Clear the line for extraction progress (tqdm will handle its own line)
+                    if show_password_progress:
+                        print(f"\nFound after {attempts} trie(s)!")
 
                     # Remove the output dir to re-extract cleanly
                     if output_dir.exists():
-                        import shutil
                         shutil.rmtree(output_dir)
                     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -328,23 +352,16 @@ class Extractor:
                         used_password = correct_password
                         return True, correct_password
                 else:
-                    # No password worked - move to new line and show failure message
-                    if password_progress_shown:
-                        print()  # Move to new line, keeping the last "Trying password X/N..."
+                    # No password worked - move to new line
+                    if show_password_progress:
+                        print()
             else:
                 # Original behavior: try passwords without progress bar
-                for password in passwords_to_try:
-                    try:
-                        success = self._extract_with_password(
-                            output_dir, password, show_progress=False
-                        )
-                        if success:
-                            used_password = password
-                            return True, password
-                    except ExtractionError:
-                        raise
-                    except Exception:
-                        continue
+                success, used_password, _ = self._try_passwords(
+                    output_dir, passwords_to_try, show_password_progress
+                )
+                if success:
+                    return True, used_password
         finally:
             if not success and created_by_us and output_dir.exists():
                 try:
@@ -437,8 +454,6 @@ class Extractor:
         Raises:
             ExtractionError: If extraction fails for non-password reasons.
         """
-        from tqdm import tqdm
-
         # Add -bsp1 to send progress to stdout
         cmd_with_progress = cmd + ["-bsp1"]
 
@@ -602,7 +617,7 @@ class Extractor:
             output_dir, passwords, show_progress, show_password_progress
         )
 
-        if not success and passwords:
+        if not success:
             raise PasswordNotFoundError(f"No matching password found for {self.archive_path.name}")
 
         return success, used_password

@@ -97,7 +97,7 @@ class TestAddCommand:
         assert "already exists" in captured.err
 
     def test_add_all_duplicates(self, password_manager: PasswordManager, capsys) -> None:
-        """Test adding only duplicate passwords."""
+        """Test adding only duplicate passwords returns 0 per UNIX convention."""
         password_manager.add_password("dup1")
         password_manager.add_password("dup2")
 
@@ -106,7 +106,7 @@ class TestAddCommand:
 
         exit_code = cmd_add_password(args, password_manager)
 
-        assert exit_code == 1  # Non-zero because nothing was added
+        assert exit_code == 0  # Always 0 - operation completed successfully
         captured = capsys.readouterr()
         assert "Skipped 2 invalid/duplicate password(s)" in captured.out
 

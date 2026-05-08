@@ -538,3 +538,101 @@ class TestExtractWithProgress:
                                 str(plain_7z_archive),
                             ]
                         )
+
+
+class TestTryPasswords:
+    """Test cases for _try_passwords helper method."""
+
+    def test_try_passwords_first_success(self, plain_7z_archive: Path, temp_dir: Path) -> None:
+        """Test that _try_passwords succeeds on first password."""
+        extractor = Extractor(plain_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, password, attempts = extractor._try_passwords(output_dir, [None])
+
+        assert success is True
+        assert password is None
+        assert attempts == 1
+
+    def test_try_passwords_success_on_second(
+        self, encrypted_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test that _try_passwords succeeds on second password."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, password, attempts = extractor._try_passwords(
+            output_dir, ["wrong", "secret123"]
+        )
+
+        assert success is True
+        assert password == "secret123"
+        assert attempts == 2
+
+    def test_try_passwords_all_fail(self, encrypted_7z_archive: Path, temp_dir: Path) -> None:
+        """Test that _try_passwords returns failure when no password works."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        success, password, attempts = extractor._try_passwords(
+            output_dir, ["wrong1", "wrong2"]
+        )
+
+        assert success is False
+        assert password is None
+        assert attempts == 2
+
+    def test_try_passwords_shows_progress(
+        self, encrypted_7z_archive: Path, temp_dir: Path, capsys
+    ) -> None:
+        """Test that _try_passwords shows progress when enabled."""
+        extractor = Extractor(encrypted_7z_archive)
+        output_dir = temp_dir / "output"
+
+        extractor._try_passwords(
+            output_dir, ["wrong", "secret123"], show_password_progress=True
+        )
+
+        captured = capsys.readouterr()
+        assert "Trying password" in captured.out
+
+    def test_try_passwords_propagates_extraction_error(
+        self, plain_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test that _try_passwords propagates ExtractionError."""
+        extractor = Extractor(plain_7z_archive)
+        output_dir = temp_dir / "output"
+
+        with patch.object(
+            extractor,
+            "_extract_with_password",
+            side_effect=ExtractionError("Corrupted archive"),
+        ):
+            with pytest.raises(ExtractionError, match="Corrupted archive"):
+                extractor._try_passwords(output_dir, [None])
+
+    def test_try_passwords_catches_non_extraction_exceptions(
+        self, plain_7z_archive: Path, temp_dir: Path
+    ) -> None:
+        """Test that _try_passwords catches non-ExtractionError exceptions and continues."""
+        extractor = Extractor(plain_7z_archive)
+        output_dir = temp_dir / "output"
+
+        call_count = 0
+
+        def mock_extract(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RuntimeError("Unexpected error")
+            return True
+
+        with patch.object(extractor, "_extract_with_password", side_effect=mock_extract):
+            success, password, attempts = extractor._try_passwords(
+                output_dir, ["pwd1", "pwd2"]
+            )
+
+        assert success is True
+        assert password == "pwd2"
+        assert attempts == 2
+        assert call_count == 2
