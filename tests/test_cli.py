@@ -89,7 +89,7 @@ class TestAddCommand:
         assert password_manager.count() == 3
         captured = capsys.readouterr()
         assert "Added 2 password(s)" in captured.out
-        assert "Skipped 1 duplicate(s)" in captured.out
+        assert "Skipped 1 invalid/duplicate password(s)" in captured.out
         assert "already exists" in captured.err
 
     def test_add_all_duplicates(self, password_manager: PasswordManager, capsys) -> None:
@@ -104,7 +104,68 @@ class TestAddCommand:
 
         assert exit_code == 1  # Non-zero because nothing was added
         captured = capsys.readouterr()
-        assert "Skipped 2 duplicate(s)" in captured.out
+        assert "Skipped 2 invalid/duplicate password(s)" in captured.out
+
+    def test_add_empty_password_shows_warning(
+        self, password_manager: PasswordManager, capsys
+    ) -> None:
+        """Test that empty password is skipped with warning."""
+        args = argparse.Namespace()
+        args.passwords = ["", "valid"]
+
+        exit_code = cmd_add_password(args, password_manager)
+
+        assert exit_code == 0
+        assert password_manager.count() == 1
+        assert "valid" in password_manager.get_passwords()
+        captured = capsys.readouterr()
+        assert "cannot be empty" in captured.err
+        assert "skipped" in captured.err.lower()
+
+    def test_add_whitespace_password_shows_warning(
+        self, password_manager: PasswordManager, capsys
+    ) -> None:
+        """Test that whitespace-only password is skipped."""
+        args = argparse.Namespace()
+        args.passwords = ["   ", "valid"]
+
+        exit_code = cmd_add_password(args, password_manager)
+
+        assert exit_code == 0
+        assert password_manager.count() == 1
+        captured = capsys.readouterr()
+        assert "whitespace-only" in captured.err
+
+    def test_add_very_long_password_shows_warning(
+        self, password_manager: PasswordManager, capsys
+    ) -> None:
+        """Test that very long password is skipped."""
+        args = argparse.Namespace()
+        args.passwords = ["a" * 1001, "valid"]
+
+        exit_code = cmd_add_password(args, password_manager)
+
+        assert exit_code == 0
+        assert password_manager.count() == 1
+        captured = capsys.readouterr()
+        assert "exceeds maximum length" in captured.err
+
+    def test_add_mixed_valid_invalid_and_duplicate(
+        self, password_manager: PasswordManager, capsys
+    ) -> None:
+        """Test batch with valid, invalid, and duplicate passwords."""
+        password_manager.add_password("existing")
+
+        args = argparse.Namespace()
+        args.passwords = ["", "existing", "valid", "   ", "another"]
+
+        exit_code = cmd_add_password(args, password_manager)
+
+        assert exit_code == 0
+        assert password_manager.count() == 3  # existing + valid + another
+        captured = capsys.readouterr()
+        assert "Added 2 password(s)" in captured.out
+        assert "Skipped 3" in captured.out
 
 
 class TestRemoveCommand:

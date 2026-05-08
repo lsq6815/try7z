@@ -62,7 +62,7 @@ from try7z.completions import (
 )
 from try7z.extractor import Extractor, get_7z_version
 from try7z.password_manager import PasswordManager
-from try7z.utils import PasswordNotFoundError, Try7zError
+from try7z.utils import PasswordNotFoundError, PasswordValidationError, Try7zError
 
 
 def cmd_add_password(
@@ -72,8 +72,9 @@ def cmd_add_password(
     """Add password(s) to the stored list.
 
     Adds one or more passwords to the password manager. Duplicate
-    passwords are skipped with a warning. Reports the number of
-    passwords added and skipped.
+    passwords are skipped with a warning. Invalid passwords (empty,
+    whitespace-only, too long) are also skipped with warnings.
+    Reports the number of passwords added and skipped.
 
     Args:
         args: Parsed command line arguments. Expected attributes:
@@ -103,6 +104,9 @@ def cmd_add_password(
             manager.add_password(password)
             added_count += 1
             added_passwords.append(password)
+        except PasswordValidationError as e:
+            print(f"Warning: {e}, skipped", file=sys.stderr)
+            skipped_count += 1
         except Try7zError:
             print(f"Warning: Password '{password}' already exists", file=sys.stderr)
             skipped_count += 1
@@ -114,7 +118,7 @@ def cmd_add_password(
             password_list += f", and {len(added_passwords) - 5} more"
         print(f"Added {added_count} password(s): {password_list}. Total: {manager.count()}")
     if skipped_count > 0:
-        print(f"Skipped {skipped_count} duplicate(s)")
+        print(f"Skipped {skipped_count} invalid/duplicate password(s)")
 
     return 0 if added_count > 0 else 1
 
