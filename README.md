@@ -148,17 +148,23 @@ pytest
 ### Run Benchmarks
 
 ```bash
-# Run only benchmark tests
+# Run only benchmark tests (via marker)
+pytest -m benchmark
+
+# Run only benchmark tests (via file pattern)
 pytest tests\benchmark_*.py --benchmark-only
 
 # Run with verbose output and statistics table
-pytest tests\benchmark_*.py --benchmark-only -v
+pytest -m benchmark -v
+
+# Run unit tests + benchmarks together
+pytest --benchmark-skip=false
 
 # Save benchmark results to JSON for comparison
-pytest tests\benchmark_*.py --benchmark-only --benchmark-json=benchmark_results.json
+pytest -m benchmark --benchmark-json=benchmark_results.json
 
 # Compare against a saved baseline
-pytest tests\benchmark_*.py --benchmark-only --benchmark-compare
+pytest -m benchmark --benchmark-compare
 ```
 
 ### Linting

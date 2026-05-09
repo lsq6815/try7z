@@ -70,11 +70,20 @@ Python 3.10+ CLI frontend for 7-Zip. Manages a password list and auto-extracts p
 pip install -e ".[dev]"
 pre-commit install   # required to enforce commit-msg hooks
 
-# Test (pytest.ini auto-enables coverage + HTML report)
+# Test (pytest.ini auto-enables coverage + HTML report, benchmarks skipped)
 pytest
 
-# Benchmark (skipped by default, run explicitly)
-pytest tests\benchmark_*.py --benchmark-only
+# Run only benchmark tests (via marker)
+pytest -m benchmark
+
+# Run only unit tests (skip benchmarks)
+pytest -m "not benchmark"
+
+# Run all tests including benchmarks
+pytest --benchmark-skip=false
+
+# Benchmark with verbose statistics
+pytest tests\benchmark_*.py --benchmark-only -v
 
 # Verify
 ruff check .

@@ -68,6 +68,9 @@ addopts = [
     "--cov-report=html",
     "--benchmark-skip",
 ]
+markers = [
+    "benchmark: Performance benchmark tests (pytest-benchmark)",
+]
 
 [tool.coverage.run]
 source = ["try7z"]
