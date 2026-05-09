@@ -27,6 +27,7 @@ classifiers = [
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
     "ruff>=0.4.0",
     "mypy>=1.9.0",
     "commitizen>=4.0.0",
@@ -65,6 +66,7 @@ addopts = [
     "--cov=try7z",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--benchmark-skip",
 ]
 
 [tool.coverage.run]
