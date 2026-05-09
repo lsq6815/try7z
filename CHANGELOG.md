@@ -1,3 +1,24 @@
+## v1.0.0 (2026-05-09)
+
+### BREAKING CHANGE
+
+- None
+
+### Feat
+
+- **config**: add pytest benchmark markers and update docs with marker-based commands
+- **password_manager**: add batch mode with deferred writes
+
+### Fix
+
+- **benchmark**: add missing pytest markers and test discovery config
+
+### Refactor
+
+- extract password attempt loop and fix code quality issues
+- apply strategy pattern to cmd_remove_password()
+- decouple CLI commands and extract helper functions
+
 ## v0.6.0 (2026-05-08)
 
 ### Feat
