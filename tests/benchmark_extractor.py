@@ -27,6 +27,7 @@ class TestBenchmarkPasswordAttempts:
         assert result[0] is False
         assert result[1] is None
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_password_not_in_list_small(
         self, encrypted_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
@@ -40,6 +41,7 @@ class TestBenchmarkPasswordAttempts:
         assert result[0] is False
         assert result[1] is None
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_password_at_start(
         self, encrypted_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
@@ -53,6 +55,7 @@ class TestBenchmarkPasswordAttempts:
         assert result[0] is True
         assert result[1] == "secret123"
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_password_at_end(
         self, encrypted_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
@@ -70,6 +73,7 @@ class TestBenchmarkPasswordAttempts:
 class TestBenchmarkArchiveExtraction:
     """Benchmark archive extraction speed."""
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_extract_plain_7z(
         self, plain_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
@@ -82,6 +86,7 @@ class TestBenchmarkArchiveExtraction:
         assert result[0] is True
         assert result[1] is None
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_extract_encrypted_7z(
         self, encrypted_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
@@ -95,6 +100,7 @@ class TestBenchmarkArchiveExtraction:
         assert result[0] is True
         assert result[1] == "secret123"
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=10.0)
     def test_benchmark_extract_large_archive(
         self, large_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:

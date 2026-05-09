@@ -62,11 +62,11 @@ warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+python_files = ["test_*.py", "benchmark_*.py"]
 addopts = [
     "--cov=try7z",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--benchmark-skip",
 ]
 markers = [
     "benchmark: Performance benchmark tests (pytest-benchmark)",

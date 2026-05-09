@@ -5,12 +5,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from pytest_benchmark.fixture import BenchmarkFixture
 
 
 class TestBenchmarkCliExtraction:
     """Benchmark complete CLI extraction workflows."""
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_cli_extract_plain(
         self, plain_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
@@ -35,6 +37,7 @@ class TestBenchmarkCliExtraction:
         assert result.returncode == 0
         assert "Success" in result.stdout
 
+    @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_cli_extract_encrypted(
         self, encrypted_7z_archive: Path, temp_dir: Path, benchmark: BenchmarkFixture
     ) -> None:
