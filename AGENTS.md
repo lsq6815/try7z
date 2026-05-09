@@ -11,6 +11,7 @@ Python 3.10+ CLI frontend for 7-Zip. Manages a password list and auto-extracts p
 | Change passwords | `try7z/password_manager.py` | `PasswordManager` class |
 | Add exception | `try7z/utils.py` | Inherit from `Try7zError` |
 | Add tests | `tests/test_*.py` | Mirror module under test |
+| Add benchmarks | `tests/benchmark_*.py` | pytest-benchmark performance tests |
 | Build docs | `docs/build.py` | Outputs to `docs/_build/html/` |
 
 ## Code Map
@@ -71,6 +72,9 @@ pre-commit install   # required to enforce commit-msg hooks
 
 # Test (pytest.ini auto-enables coverage + HTML report)
 pytest
+
+# Benchmark (skipped by default, run explicitly)
+pytest tests\benchmark_*.py --benchmark-only
 
 # Verify
 ruff check .

@@ -9,6 +9,7 @@ A 7-Zip frontend application for automatically extracting password-protected arc
 - Support for `.7z`, `.zip`, `.rar` formats
 - Extract multiple archives in one command
 - Bundled 7-Zip executable - no external dependencies
+- Built-in benchmark tests for performance monitoring
 
 ## Installation
 
@@ -144,6 +145,22 @@ python -m try7z extract path/to/archive.7z
 pytest
 ```
 
+### Run Benchmarks
+
+```bash
+# Run only benchmark tests
+pytest tests\benchmark_*.py --benchmark-only
+
+# Run with verbose output and statistics table
+pytest tests\benchmark_*.py --benchmark-only -v
+
+# Save benchmark results to JSON for comparison
+pytest tests\benchmark_*.py --benchmark-only --benchmark-json=benchmark_results.json
+
+# Compare against a saved baseline
+pytest tests\benchmark_*.py --benchmark-only --benchmark-compare
+```
+
 ### Linting
 
 ```bash
@@ -183,10 +200,14 @@ try7z/
 │           └── 7-zip.dll      # Bundled 7-Zip codec library
 ├── tests/
 │   ├── __init__.py
+│   ├── conftest.py              # Shared pytest fixtures
 │   ├── test_cli.py
 │   ├── test_password_manager.py
 │   ├── test_extractor.py
-│   └── test_utils.py
+│   ├── test_utils.py
+│   ├── benchmark_extractor.py   # Extraction performance benchmarks
+│   ├── benchmark_password_manager.py  # Password manager benchmarks
+│   └── benchmark_end_to_end.py  # CLI workflow benchmarks
 ├── docs/
 │   ├── conf.py
 │   ├── index.rst
