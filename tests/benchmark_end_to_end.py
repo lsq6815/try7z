@@ -17,7 +17,7 @@ class TestBenchmarkCliExtraction:
         """Benchmark: CLI extraction of plain archive."""
         output_dir = temp_dir / "output"
 
-        def run_extract():
+        def run_extract() -> subprocess.CompletedProcess[str]:
             shutil.rmtree(output_dir, ignore_errors=True)
             return subprocess.run(
                 [
@@ -41,7 +41,7 @@ class TestBenchmarkCliExtraction:
         """Benchmark: CLI extraction of encrypted archive."""
         output_dir = temp_dir / "output"
 
-        def run_extract():
+        def run_extract() -> subprocess.CompletedProcess[str]:
             shutil.rmtree(output_dir, ignore_errors=True)
             return subprocess.run(
                 [

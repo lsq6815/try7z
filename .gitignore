@@ -55,6 +55,7 @@ docs/_build/
 
 # Project Specific
 *.log
+benchmark_results.json
 
 # OS
 .DS_Store

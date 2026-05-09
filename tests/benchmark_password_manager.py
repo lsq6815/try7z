@@ -23,7 +23,7 @@ class TestBenchmarkPasswordManagerCrud:
     @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_add_password(self, temp_dir: Path, benchmark: BenchmarkFixture) -> None:
         """Benchmark: add a single password."""
-        def _add_password():
+        def _add_password() -> None:
             _clear_passwords_file(temp_dir)
             manager = PasswordManager(data_dir=temp_dir, auto_save=False)
             manager.add_password(f"test_{uuid.uuid4().hex[:8]}")
@@ -37,7 +37,7 @@ class TestBenchmarkPasswordManagerCrud:
         """Benchmark: add 100 passwords with auto_save=False."""
         passwords = [f"pwd_{i}" for i in range(100)]
 
-        def _batch_add():
+        def _batch_add() -> None:
             _clear_passwords_file(temp_dir)
             manager = PasswordManager(data_dir=temp_dir, auto_save=False)
             for pwd in passwords:
@@ -79,7 +79,7 @@ class TestBenchmarkPasswordManagerCrud:
     @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_remove_password(self, temp_dir: Path, benchmark: BenchmarkFixture) -> None:
         """Benchmark: remove password by value from 100-item list."""
-        def _remove():
+        def _remove() -> PasswordManager:
             _clear_passwords_file(temp_dir)
             manager = PasswordManager(data_dir=temp_dir, auto_save=False)
             for i in range(100):
@@ -94,7 +94,7 @@ class TestBenchmarkPasswordManagerCrud:
     @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_remove_by_index(self, temp_dir: Path, benchmark: BenchmarkFixture) -> None:
         """Benchmark: remove password by index from 100-item list."""
-        def _remove():
+        def _remove() -> PasswordManager:
             _clear_passwords_file(temp_dir)
             manager = PasswordManager(data_dir=temp_dir, auto_save=False)
             for i in range(100):
@@ -117,7 +117,7 @@ class TestBenchmarkPasswordManagerPersistence:
         passwords_file = temp_dir / "passwords.json"
         passwords_file.write_text(json.dumps(passwords_data))
 
-        def load_manager():
+        def load_manager() -> PasswordManager:
             return PasswordManager(data_dir=temp_dir)
 
         manager = benchmark(load_manager)
@@ -127,7 +127,7 @@ class TestBenchmarkPasswordManagerPersistence:
     @pytest.mark.benchmark(min_rounds=1, max_time=5.0)
     def test_benchmark_save_passwords(self, temp_dir: Path, benchmark: BenchmarkFixture) -> None:
         """Benchmark: save 10,000 passwords to JSON file."""
-        def _save():
+        def _save() -> PasswordManager:
             _clear_passwords_file(temp_dir)
             manager = PasswordManager(data_dir=temp_dir, auto_save=False)
             for i in range(10000):
