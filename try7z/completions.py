@@ -207,8 +207,10 @@ Register-ArgumentCompleter -Native -CommandName try7z -ScriptBlock {{
             if ($prev -eq '-o' -or $prev -eq '--output') {{
                 Get-ChildItem -Directory -Name "$wordToComplete*" |
                     ForEach-Object {{
+                        $ct = $_
+                        if ($ct -match ' ') {{ $ct = '"{{0}}"' -f $ct }}
                         [System.Management.Automation.CompletionResult]::new(
-                            $_, $_, 'ProviderItem', $_)
+                            $ct, $_, 'ProviderItem', $_)
                     }}
                 return
             }}
@@ -225,10 +227,12 @@ Register-ArgumentCompleter -Native -CommandName try7z -ScriptBlock {{
                     }}
             }} else {{
                 Get-ChildItem -Name "$wordToComplete*" |
-                    Where-Object {{ $_ -match '\\.(7z|zip|rar)$' }} |
+                    Where-Object {{ $_ -match '\.(7z|zip|rar)$' }} |
                     ForEach-Object {{
+                        $ct = $_
+                        if ($ct -match ' ') {{ $ct = '"{{0}}"' -f $ct }}
                         [System.Management.Automation.CompletionResult]::new(
-                            $_, $_, 'ProviderItem', $_)
+                            $ct, $_, 'ProviderItem', $_)
                     }}
             }}
         }}
@@ -427,21 +431,22 @@ def _install_pwsh_completion_common(profile: Path, script: str) -> None:
             new_lines: list[str] = []
             skip = False
             brace_count = 0
+            seen_brace = False
             for line in lines:
                 if marker in line:
                     skip = True
                     brace_count = 0
+                    seen_brace = False
+                    continue
                 if skip:
                     brace_count += line.count("{")
                     brace_count -= line.count("}")
-                    if brace_count == 0 and "{" in "".join(new_lines[-5:]):
+                    if "{" in line:
+                        seen_brace = True
+                    if seen_brace and brace_count == 0:
                         skip = False
-                        continue
-                    elif brace_count == 0:
-                        skip = False
-                        continue
-                if not skip:
-                    new_lines.append(line)
+                    continue
+                new_lines.append(line)
             # Append new script
             if new_lines and not new_lines[-1].endswith("\n"):
                 new_lines.append("\n")
