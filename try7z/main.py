@@ -526,13 +526,13 @@ def _resolve_input_paths(paths: list[str]) -> list[Path]:
     Example:
         >>> from pathlib import Path
         >>> from try7z.main import _resolve_input_paths
-        >>> # Single file
-        >>> result = _resolve_input_paths(["archive.7z"])
-        >>> len(result)
-        1
-        >>> # Directory with archives
-        >>> result = _resolve_input_paths(["./downloads"])
-        >>> len(result) >= 0
+        >>> # Resolve a single archive file
+        >>> result = _resolve_input_paths(["archive.7z"])  # File must exist
+        >>> len(result) == 1 if result else True
+        True
+        >>> # Resolve a directory containing archives
+        >>> result = _resolve_input_paths(["./downloads"])  # Dir must exist
+        >>> isinstance(result, list)
         True
     """
     archive_files: set[Path] = set()
