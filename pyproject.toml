@@ -67,6 +67,7 @@ addopts = [
     "--cov=try7z",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "-m not benchmark",
 ]
 markers = [
     "benchmark: Performance benchmark tests (pytest-benchmark)",
