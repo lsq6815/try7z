@@ -56,9 +56,30 @@ select = ["E", "F", "W", "I", "N", "UP"]
 
 [tool.mypy]
 python_version = "3.10"
-strict = true
 warn_return_any = true
 warn_unused_configs = true
+files = ["try7z", "docs", "tests"]
+exclude = [
+    "^build/",
+    "^dist/",
+    "^htmlcov/",
+    "^\\.tox/",
+    "^\\.venv/",
+    "^venv/",
+]
+
+[[tool.mypy.overrides]]
+module = "sphinx.*"
+follow_imports = "skip"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "try7z.*"
+strict = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

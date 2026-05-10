@@ -6,6 +6,7 @@ without requiring ``make`` to be installed.
 
 import sys
 from pathlib import Path
+from typing import cast
 
 from sphinx.cmd.build import main as sphinx_build
 
@@ -20,11 +21,11 @@ def build() -> int:
     build_dir = docs_dir / "_build" / "html"
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    return sphinx_build([
+    return cast(int, sphinx_build([
         "-b", "html",
         str(docs_dir),
         str(build_dir),
-    ])
+    ]))
 
 
 if __name__ == "__main__":
