@@ -1201,6 +1201,71 @@ class TestAutocompletionCommand:
         captured = capsys.readouterr()
         assert "installed" in captured.out
 
+    def test_pwsh_script_quotes_filenames_with_spaces(self) -> None:
+        """Test that pwsh completion script quotes filenames with spaces.
+
+        Verifies the generated script contains logic to wrap filenames
+        containing spaces in double quotes, preventing argument splitting.
+        """
+        from try7z.completions import generate_pwsh_completion
+
+        script = generate_pwsh_completion()
+        assert "$ct = $_" in script
+        assert "if ($ct -match ' ') { $ct = '\"{0}\"' -f $ct }" in script
+
+    def test_autocompletion_pwsh_install_no_duplicate(self, temp_dir: Path) -> None:
+        """Test that installing pwsh completion twice does not duplicate.
+
+        Simulates the bug where repeated --install appended a new script block
+        instead of replacing the existing one.
+        """
+        from try7z.completions import (
+            _install_pwsh_completion_common,
+            generate_pwsh_completion,
+        )
+
+        profile = temp_dir / "profile.ps1"
+        # Pre-populate with an existing completion script
+        old_script = generate_pwsh_completion()
+        _install_pwsh_completion_common(profile, old_script)
+
+        content_before = profile.read_text(encoding="utf-8")
+        assert content_before.count("Register-ArgumentCompleter") == 1
+
+        # Install again
+        new_script = generate_pwsh_completion()
+        _install_pwsh_completion_common(profile, new_script)
+
+        content_after = profile.read_text(encoding="utf-8")
+        assert content_after.count("Register-ArgumentCompleter") == 1
+        assert content_after.count("try7z pwsh completion script") == 1
+
+    def test_pwsh_script_syntax_valid(self, temp_dir: Path) -> None:
+        """Test that generated pwsh script is syntactically valid.
+
+        Catches issues like unmatched braces that cause ParserError
+        when the profile is loaded.
+        """
+        from try7z.completions import generate_pwsh_completion
+
+        script = generate_pwsh_completion()
+        script_file = temp_dir / "completion.ps1"
+        script_file.write_text(script, encoding="utf-8")
+
+        result = subprocess.run(
+            [
+                "pwsh",
+                "-NoProfile",
+                "-Command",
+                f"Invoke-Expression (Get-Content '{script_file}' -Raw)",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, (
+            f"PowerShell syntax error:\n{result.stderr}"
+        )
+
     def test_autocompletion_install_error(self, capsys) -> None:
         """Test handling of install errors."""
         with patch(
