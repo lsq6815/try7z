@@ -14,6 +14,7 @@ from try7z.main import (
     RemoveByIndexStrategy,
     RemoveByValueStrategy,
     _report_removal_result,
+    _resolve_input_paths,
     cmd_add_password,
     cmd_autocompletion,
     cmd_clear_passwords,
@@ -1341,3 +1342,135 @@ class TestAutocompletionCommand:
         captured = capsys.readouterr()
         assert "Error installing completion" in captured.err
         assert "Permission denied" in captured.err
+
+
+class TestResolveInputPaths:
+    """Test cases for _resolve_input_paths function."""
+
+    def test_single_supported_file(self, temp_dir: Path) -> None:
+        """Test resolving a single supported archive file."""
+        archive = temp_dir / "test.7z"
+        archive.write_text("fake archive")
+
+        result = _resolve_input_paths([str(archive)])
+
+        assert len(result) == 1
+        assert result[0] == archive.resolve()
+
+    def test_single_directory_with_archives(self, temp_dir: Path) -> None:
+        """Test resolving a directory containing multiple archives."""
+        (temp_dir / "a.7z").write_text("archive a")
+        (temp_dir / "b.zip").write_text("archive b")
+        (temp_dir / "c.rar").write_text("archive c")
+        (temp_dir / "other.txt").write_text("not an archive")
+
+        result = _resolve_input_paths([str(temp_dir)])
+
+        assert len(result) == 3
+        names = [p.name for p in result]
+        assert "a.7z" in names
+        assert "b.zip" in names
+        assert "c.rar" in names
+        assert "other.txt" not in names
+
+    def test_empty_directory(self, temp_dir: Path) -> None:
+        """Test resolving an empty directory returns empty list."""
+        result = _resolve_input_paths([str(temp_dir)])
+
+        assert result == []
+
+    def test_directory_with_only_unsupported_files(self, temp_dir: Path) -> None:
+        """Test directory with only non-archive files returns empty list."""
+        (temp_dir / "readme.txt").write_text("readme")
+        (temp_dir / "data.json").write_text("{}")
+
+        result = _resolve_input_paths([str(temp_dir)])
+
+        assert result == []
+
+    def test_mixed_file_and_directory(self, temp_dir: Path) -> None:
+        """Test resolving a mix of file and directory paths."""
+        subdir = temp_dir / "subdir"
+        subdir.mkdir()
+        (subdir / "sub.7z").write_text("sub archive")
+
+        main_archive = temp_dir / "main.zip"
+        main_archive.write_text("main archive")
+
+        result = _resolve_input_paths([str(main_archive), str(subdir)])
+
+        assert len(result) == 2
+        names = [p.name for p in result]
+        assert "main.zip" in names
+        assert "sub.7z" in names
+
+    def test_unsupported_file(self, temp_dir: Path, capsys) -> None:
+        """Test unsupported file prints warning and returns empty list."""
+        txt_file = temp_dir / "readme.txt"
+        txt_file.write_text("readme")
+
+        result = _resolve_input_paths([str(txt_file)])
+
+        assert result == []
+        captured = capsys.readouterr()
+        assert "Unsupported file format" in captured.err
+        assert "readme.txt" in captured.err
+
+    def test_nonexistent_path(self, temp_dir: Path, capsys) -> None:
+        """Test nonexistent path prints warning and returns empty list."""
+        missing = temp_dir / "missing.7z"
+
+        result = _resolve_input_paths([str(missing)])
+
+        assert result == []
+        captured = capsys.readouterr()
+        assert "Path not found" in captured.err
+        assert "missing.7z" in captured.err
+
+    def test_multiple_directories(self, temp_dir: Path) -> None:
+        """Test resolving multiple directories."""
+        dir1 = temp_dir / "dir1"
+        dir1.mkdir()
+        (dir1 / "a.7z").write_text("archive a")
+
+        dir2 = temp_dir / "dir2"
+        dir2.mkdir()
+        (dir2 / "b.zip").write_text("archive b")
+
+        result = _resolve_input_paths([str(dir1), str(dir2)])
+
+        assert len(result) == 2
+        names = [p.name for p in result]
+        assert "a.7z" in names
+        assert "b.zip" in names
+
+    def test_duplicate_paths(self, temp_dir: Path) -> None:
+        """Test duplicate paths are deduplicated."""
+        archive = temp_dir / "test.7z"
+        archive.write_text("archive")
+
+        result = _resolve_input_paths([str(archive), str(archive)])
+
+        assert len(result) == 1
+
+    def test_case_insensitive_extensions(self, temp_dir: Path) -> None:
+        """Test archive extensions are matched case-insensitively."""
+        (temp_dir / "lower.7z").write_text("lower")
+        (temp_dir / "upper.ZIP").write_text("upper")
+        (temp_dir / "mixed.Rar").write_text("mixed")
+
+        result = _resolve_input_paths([str(temp_dir)])
+
+        assert len(result) == 3
+
+    def test_result_is_sorted(self, temp_dir: Path) -> None:
+        """Test result is sorted by path string."""
+        (temp_dir / "z.7z").write_text("z")
+        (temp_dir / "a.7z").write_text("a")
+        (temp_dir / "m.7z").write_text("m")
+
+        result = _resolve_input_paths([str(temp_dir)])
+
+        assert len(result) == 3
+        names = [p.name for p in result]
+        assert names == ["a.7z", "m.7z", "z.7z"]
