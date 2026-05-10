@@ -660,9 +660,9 @@ class TestExtractCommand:
 
         exit_code = cmd_extract(args)
 
-        assert exit_code == 1
+        assert exit_code == 0
         captured = capsys.readouterr()
-        assert "Error" in captured.err
+        assert "Warning" in captured.err
 
     def test_extract_nonexistent_file(self, temp_dir: Path, capsys) -> None:
         """Test extracting a nonexistent file."""
@@ -674,9 +674,9 @@ class TestExtractCommand:
 
         exit_code = cmd_extract(args)
 
-        assert exit_code == 1
+        assert exit_code == 0
         captured = capsys.readouterr()
-        assert "Error" in captured.err
+        assert "Warning" in captured.err
 
 
 class TestGet7zVersion:

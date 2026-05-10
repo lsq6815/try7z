@@ -714,12 +714,15 @@ def cmd_extract(
 
     passwords = _build_password_list(manager, args.password)
 
+    archive_files = _resolve_input_paths(args.archive)
+    if not archive_files:
+        return 0
+
     success_count = 0
     failure_count = 0
-    total = len(args.archive)
+    total = len(archive_files)
 
-    for archive_str in args.archive:
-        archive_path = Path(archive_str)
+    for archive_path in archive_files:
         output_dir = _resolve_output_dir(
             archive_path, args.output, use_subdirectory=(total > 1)
         )
