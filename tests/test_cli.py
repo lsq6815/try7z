@@ -1213,6 +1213,65 @@ class TestAutocompletionCommand:
         assert "$ct = $_" in script
         assert "if ($ct -match ' ') { $ct = '\"{0}\"' -f $ct }" in script
 
+    def test_pwsh_format_string_not_literal_zero(self) -> None:
+        """Test that {0} format placeholder is not corrupted by f-string.
+
+        Regression test for the bug where Python's f-string interpreted
+        {0} as an expression, generating PowerShell code '"0"' instead of
+        '"{0}"'. This caused all quoted filenames to become "0".
+        """
+        from try7z.completions import generate_pwsh_completion
+
+        script = generate_pwsh_completion()
+        # Must contain PowerShell format string {0}, not Python expression 0
+        assert "'\"{0}\"' -f $ct" in script
+        # Ensure it does NOT contain the buggy literal '"0"'
+        assert "'\"0\"' -f $ct" not in script
+
+    def test_pwsh_quotes_multiple_spaces(self, temp_dir: Path) -> None:
+        """Test quoting of filenames with multiple consecutive spaces.
+
+        Verifies that filenames like 'A  B.zip' (double space) are still
+        correctly quoted in the completion output.
+        """
+        from try7z.completions import (
+            _install_pwsh_completion_common,
+            generate_pwsh_completion,
+        )
+
+        profile = temp_dir / "profile.ps1"
+        script = generate_pwsh_completion()
+        _install_pwsh_completion_common(profile, script)
+
+        content = profile.read_text(encoding="utf-8")
+        assert content.count("Register-ArgumentCompleter") == 1
+
+    def test_powershell_script_syntax_valid(self, temp_dir: Path) -> None:
+        """Test that generated Windows PowerShell script is syntactically valid.
+
+        Similar to test_pwsh_script_syntax_valid but for Windows PowerShell
+        (powershell.exe) which may have slightly different syntax rules.
+        """
+        from try7z.completions import generate_powershell_completion
+
+        script = generate_powershell_completion()
+        script_file = temp_dir / "completion.ps1"
+        script_file.write_text(script, encoding="utf-8")
+
+        result = subprocess.run(
+            [
+                "pwsh",
+                "-NoProfile",
+                "-Command",
+                f"Invoke-Expression (Get-Content '{script_file}' -Raw)",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, (
+            f"PowerShell syntax error:\n{result.stderr}"
+        )
+
     def test_autocompletion_pwsh_install_no_duplicate(self, temp_dir: Path) -> None:
         """Test that installing pwsh completion twice does not duplicate.
 
