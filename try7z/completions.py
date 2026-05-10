@@ -227,7 +227,7 @@ Register-ArgumentCompleter -Native -CommandName try7z -ScriptBlock {{
                     }}
             }} else {{
                 Get-ChildItem -Name "$wordToComplete*" |
-                    Where-Object {{ $_ -match '\.(7z|zip|rar)$' }} |
+                    Where-Object {{ $_ -match '\\.(7z|zip|rar)$' }} |
                     ForEach-Object {{
                         $ct = $_
                         if ($ct -match ' ') {{ $ct = '"{{0}}"' -f $ct }}
