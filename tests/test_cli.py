@@ -968,6 +968,62 @@ class TestExtractCommandEdgeCases:
         assert (plain_7z_archive.parent / "plain" / "src" / "test.txt").exists()
         assert (archive2.parent / "second" / "src2" / "test.txt").exists()
 
+    def test_extract_directory_with_archives(
+        self,
+        plain_7z_archive: Path,
+        temp_dir: Path,
+        password_manager: PasswordManager,
+        capsys,
+    ) -> None:
+        """Test extracting from a directory containing archives."""
+        args = argparse.Namespace()
+        args.archive = [str(temp_dir)]
+        args.output = None
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "Success!" in captured.out
+        default_output = plain_7z_archive.parent / plain_7z_archive.stem
+        assert (default_output / "src" / "test.txt").exists()
+
+    def test_extract_empty_directory(
+        self, temp_dir: Path, password_manager: PasswordManager, capsys
+    ) -> None:
+        """Test extracting from an empty directory returns 0."""
+        args = argparse.Namespace()
+        args.archive = [str(temp_dir)]
+        args.output = None
+        args.password = None
+        args.force = False
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+
+    def test_extract_directory_with_output_flag(
+        self,
+        plain_7z_archive: Path,
+        temp_dir: Path,
+        password_manager: PasswordManager,
+        capsys,
+    ) -> None:
+        """Test extracting directory archives to specified output."""
+        output_dir = temp_dir / "all_extracted"
+        args = argparse.Namespace()
+        args.archive = [str(temp_dir)]
+        args.output = str(output_dir)
+        args.password = None
+        args.force = True
+
+        exit_code = cmd_extract(args, password_manager)
+
+        assert exit_code == 0
+        assert (output_dir / "src" / "test.txt").exists()
+
 
 class TestAutocompletionCommand:
     """Test cases for autocompletion command."""
