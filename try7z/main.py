@@ -64,7 +64,12 @@ from try7z.completions import (
 )
 from try7z.extractor import Extractor, get_7z_version
 from try7z.password_manager import PasswordManager
-from try7z.utils import PasswordNotFoundError, PasswordValidationError, Try7zError
+from try7z.utils import (
+    PasswordNotFoundError,
+    PasswordValidationError,
+    Try7zError,
+    is_supported_archive,
+)
 
 
 @dataclass
@@ -501,6 +506,60 @@ def _build_password_list(
     if priority_password:
         passwords = [priority_password] + passwords
     return passwords
+
+
+def _resolve_input_paths(paths: list[str]) -> list[Path]:
+    """Resolve input paths to a list of supported archive files.
+
+    For each path in the input list:
+    - If it's a supported archive file (.7z/.zip/.rar), include it
+    - If it's a directory, scan non-recursively for supported archives
+    - If it's neither, print a warning and skip
+    - If the path doesn't exist, print a warning and skip
+
+    Args:
+        paths: List of input paths (files or directories).
+
+    Returns:
+        Sorted list of absolute paths to archive files.
+
+    Example:
+        >>> from pathlib import Path
+        >>> from try7z.main import _resolve_input_paths
+        >>> # Single file
+        >>> result = _resolve_input_paths(["archive.7z"])
+        >>> len(result)
+        1
+        >>> # Directory with archives
+        >>> result = _resolve_input_paths(["./downloads"])
+        >>> len(result) >= 0
+        True
+    """
+    archive_files: set[Path] = set()
+
+    for path_str in paths:
+        path = Path(path_str)
+
+        if not path.exists():
+            print(f"Warning: Path not found: {path}", file=sys.stderr)
+            continue
+
+        if path.is_file():
+            if is_supported_archive(path):
+                archive_files.add(path.resolve())
+            else:
+                print(
+                    f"Warning: Unsupported file format: {path}",
+                    file=sys.stderr,
+                )
+        elif path.is_dir():
+            for item in path.iterdir():
+                if item.is_file() and is_supported_archive(item):
+                    archive_files.add(item.resolve())
+        else:
+            print(f"Warning: Unsupported path type: {path}", file=sys.stderr)
+
+    return sorted(archive_files, key=lambda p: str(p))
 
 
 def _resolve_output_dir(
