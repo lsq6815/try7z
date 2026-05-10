@@ -1,3 +1,10 @@
+## v1.0.1 (2026-05-10)
+
+### Fix
+
+- **lint**: escape backslash in regex pattern to avoid invalid escape sequence
+- **completions**: handle spaces in filenames and prevent duplicate installs
+
 ## v1.0.0 (2026-05-09)
 
 ### BREAKING CHANGE
