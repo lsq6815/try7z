@@ -182,11 +182,7 @@ mypy try7z/
 ### Build Documentation
 
 ```bash
-# After installation (requires dev dependencies)
-build-docs
-
-# Or using the module
-python -m docs.build
+python docs/build.py
 ```
 
 Open `docs/_build/html/index.html` in a web browser after building.

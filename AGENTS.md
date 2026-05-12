@@ -12,7 +12,7 @@ Python 3.10+ CLI frontend for 7-Zip. Manages a password list and auto-extracts p
 | Add exception | `try7z/utils.py` | Inherit from `Try7zError` |
 | Add tests | `tests/test_*.py` | Mirror module under test |
 | Add benchmarks | `tests/benchmark_*.py` | pytest-benchmark performance tests |
-| Build docs | `build-docs` (or `python -m docs.build`) | Outputs to `docs/_build/html/` |
+| Build docs | `python docs/build.py` | Outputs to `docs/_build/html/` |
 
 ## Code Map
 
@@ -94,8 +94,7 @@ rm -r build dist *.egg-info
 pip install . --no-cache-dir --force-reinstall
 
 # Docs
-build-docs
-# Or: python -m docs.build
+python docs/build.py
 # Open docs/_build/html/index.html
 
 # Release (maintainers)
