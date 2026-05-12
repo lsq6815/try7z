@@ -39,6 +39,7 @@ dev = [
 
 [project.scripts]
 try7z = "try7z.main:main"
+build-docs = "docs.build:build"
 
 [tool.setuptools.packages.find]
 where = ["."]
