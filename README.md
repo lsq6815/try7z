@@ -182,7 +182,11 @@ mypy try7z/
 ### Build Documentation
 
 ```bash
-python docs/build.py
+# After installation (requires dev dependencies)
+build-docs
+
+# Or using the module
+python -m docs.build
 ```
 
 Open `docs/_build/html/index.html` in a web browser after building.
@@ -215,12 +219,14 @@ try7z/
 │   ├── benchmark_password_manager.py  # Password manager benchmarks
 │   └── benchmark_end_to_end.py  # CLI workflow benchmarks
 ├── docs/
+│   ├── __init__.py            # Package init for build-docs CLI
 │   ├── conf.py
 │   ├── index.rst
 │   ├── modules.rst
 │   └── build.py
 ├── pyproject.toml             # Package configuration
 ├── MANIFEST.in                # Package data includes
+├── .gitattributes             # Line ending normalization rules
 ├── README.md
 └── AGENTS.md
 ```
