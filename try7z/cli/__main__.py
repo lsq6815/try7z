@@ -27,7 +27,7 @@ Note:
 
 import sys
 
-from try7z.cli import main
+from try7z.main import main
 
 if __name__ == "__main__":
     sys.exit(main())

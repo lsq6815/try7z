@@ -56,7 +56,7 @@ from pathlib import Path
 from typing import Protocol
 
 from try7z import __build_date__, __version__
-from try7z.completions import (
+from try7z.cli.completions import (
     generate_bash_completion,
     generate_powershell_completion,
     generate_pwsh_completion,

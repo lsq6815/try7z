@@ -1072,9 +1072,9 @@ class TestAutocompletionCommand:
         bashrc = temp_dir / ".bashrc"
         completion_file = temp_dir / ".try7z-completion.bash"
 
-        with patch("try7z.completions._get_bashrc_path", return_value=bashrc):
+        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc):
             with patch(
-                "try7z.completions.Path.home", return_value=temp_dir
+                "try7z.cli.completions.Path.home", return_value=temp_dir
             ):
                 args = argparse.Namespace()
                 args.shell = "bash"
@@ -1096,7 +1096,7 @@ class TestAutocompletionCommand:
         profile = temp_dir / "profile.ps1"
 
         with patch(
-            "try7z.completions._get_pwsh_profile_path", return_value=profile
+            "try7z.cli.completions._get_pwsh_profile_path", return_value=profile
         ):
             args = argparse.Namespace()
             args.shell = "pwsh"
@@ -1116,7 +1116,7 @@ class TestAutocompletionCommand:
         profile = temp_dir / "powershell_profile.ps1"
 
         with patch(
-            "try7z.completions._get_powershell_profile_path",
+            "try7z.cli.completions._get_powershell_profile_path",
             return_value=profile,
         ):
             args = argparse.Namespace()
@@ -1164,9 +1164,9 @@ class TestAutocompletionCommand:
         bashrc.write_text("# existing bashrc\n", encoding="utf-8")
         completion_file = temp_dir / ".try7z-completion.bash"
 
-        with patch("try7z.completions._get_bashrc_path", return_value=bashrc):
+        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc):
             with patch(
-                "try7z.completions.Path.home", return_value=temp_dir
+                "try7z.cli.completions.Path.home", return_value=temp_dir
             ):
                 args = argparse.Namespace()
                 args.shell = "bash"
@@ -1189,9 +1189,9 @@ class TestAutocompletionCommand:
         bashrc = temp_dir / ".bashrc"
         bashrc.write_text("# bashrc\n", encoding="utf-8")
 
-        with patch("try7z.completions._get_bashrc_path", return_value=bashrc):
+        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc):
             with patch(
-                "try7z.completions.Path.home", return_value=temp_dir
+                "try7z.cli.completions.Path.home", return_value=temp_dir
             ):
                 args = argparse.Namespace()
                 args.shell = "bash"
@@ -1214,7 +1214,7 @@ class TestAutocompletionCommand:
         profile.write_text("# existing profile\n", encoding="utf-8")
 
         with patch(
-            "try7z.completions._get_pwsh_profile_path", return_value=profile
+            "try7z.cli.completions._get_pwsh_profile_path", return_value=profile
         ):
             args = argparse.Namespace()
             args.shell = "pwsh"
@@ -1242,7 +1242,7 @@ class TestAutocompletionCommand:
         )
 
         with patch(
-            "try7z.completions._get_pwsh_profile_path", return_value=profile
+            "try7z.cli.completions._get_pwsh_profile_path", return_value=profile
         ):
             args = argparse.Namespace()
             args.shell = "pwsh"
@@ -1264,7 +1264,7 @@ class TestAutocompletionCommand:
         Verifies the generated script contains logic to wrap filenames
         containing spaces in double quotes, preventing argument splitting.
         """
-        from try7z.completions import generate_pwsh_completion
+        from try7z.cli.completions import generate_pwsh_completion
 
         script = generate_pwsh_completion()
         assert "$ct = $_" in script
@@ -1277,7 +1277,7 @@ class TestAutocompletionCommand:
         {0} as an expression, generating PowerShell code '"0"' instead of
         '"{0}"'. This caused all quoted filenames to become "0".
         """
-        from try7z.completions import generate_pwsh_completion
+        from try7z.cli.completions import generate_pwsh_completion
 
         script = generate_pwsh_completion()
         # Must contain PowerShell format string {0}, not Python expression 0
@@ -1291,7 +1291,7 @@ class TestAutocompletionCommand:
         Verifies that filenames like 'A  B.zip' (double space) are still
         correctly quoted in the completion output.
         """
-        from try7z.completions import (
+        from try7z.cli.completions import (
             _install_pwsh_completion_common,
             generate_pwsh_completion,
         )
@@ -1309,7 +1309,7 @@ class TestAutocompletionCommand:
         Similar to test_pwsh_script_syntax_valid but for Windows PowerShell
         (powershell.exe) which may have slightly different syntax rules.
         """
-        from try7z.completions import generate_powershell_completion
+        from try7z.cli.completions import generate_powershell_completion
 
         script = generate_powershell_completion()
         script_file = temp_dir / "completion.ps1"
@@ -1335,7 +1335,7 @@ class TestAutocompletionCommand:
         Simulates the bug where repeated --install appended a new script block
         instead of replacing the existing one.
         """
-        from try7z.completions import (
+        from try7z.cli.completions import (
             _install_pwsh_completion_common,
             generate_pwsh_completion,
         )
@@ -1362,7 +1362,7 @@ class TestAutocompletionCommand:
         Catches issues like unmatched braces that cause ParserError
         when the profile is loaded.
         """
-        from try7z.completions import generate_pwsh_completion
+        from try7z.cli.completions import generate_pwsh_completion
 
         script = generate_pwsh_completion()
         script_file = temp_dir / "completion.ps1"
