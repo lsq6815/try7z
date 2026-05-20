@@ -21,13 +21,13 @@ Example:
         $ python -m try7z extract archive.7z
 
 Note:
-    This module simply calls :func:`try7z.main.main`.
-    See :mod:`try7z.main` for the full CLI documentation.
+    This module simply calls :func:`try7z.cli.main`.
+    See :mod:`try7z.cli.main` for the full CLI documentation.
 """
 
 import sys
 
-from try7z.main import main
+from try7z.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

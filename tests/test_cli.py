@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 
 from try7z.extractor import get_7z_version
-from try7z.main import (
+from try7z.cli.main import (
     RemovalResult,
     RemoveByIndexStrategy,
     RemoveByValueStrategy,
@@ -49,22 +49,18 @@ class TestAddCommand:
         captured = capsys.readouterr()
         assert "Added 1 password(s)" in captured.out
 
-    def test_add_password_default_manager(self, capsys, monkeypatch) -> None:
+    def test_add_password_default_manager(self, capsys) -> None:
         """Test adding password with default manager (manager=None)."""
         import tempfile
 
         with tempfile.TemporaryDirectory() as d:
             data_dir = Path(d)
             manager = PasswordManager(data_dir=data_dir)
-            monkeypatch.setattr(
-                "try7z.main.PasswordManager",
-                lambda: manager,
-            )
 
             args = argparse.Namespace()
             args.passwords = ["default_test"]
 
-            exit_code = cmd_add_password(args)
+            exit_code = cmd_add_password(args, manager)
 
             assert exit_code == 0
             assert "default_test" in manager.get_passwords()
@@ -451,20 +447,16 @@ class TestListCommand:
         captured = capsys.readouterr()
         assert "No passwords stored" in captured.out
 
-    def test_list_empty_default_manager(self, capsys, monkeypatch) -> None:
+    def test_list_empty_default_manager(self, capsys) -> None:
         """Test listing with default manager when empty."""
         import tempfile
 
         with tempfile.TemporaryDirectory() as d:
             data_dir = Path(d)
             manager = PasswordManager(data_dir=data_dir)
-            monkeypatch.setattr(
-                "try7z.main.PasswordManager",
-                lambda: manager,
-            )
 
             args = argparse.Namespace()
-            exit_code = cmd_list_passwords(args)
+            exit_code = cmd_list_passwords(args, manager)
 
             assert exit_code == 0
             captured = capsys.readouterr()
@@ -720,7 +712,7 @@ class TestMain:
             sys, "argv", ["try7z", "add", "testpassword123"]
         ):
             with patch(
-                "try7z.main.PasswordManager"
+                "try7z.cli.main.PasswordManager"
             ) as mock_manager_class:
                 mock_manager = mock_manager_class.return_value
                 mock_manager.count.return_value = 1
@@ -753,7 +745,7 @@ class TestMain:
         """Test that list command works through main()."""
         with patch.object(sys, "argv", ["try7z", "list"]):
             with patch(
-                "try7z.main.PasswordManager"
+                "try7z.cli.main.PasswordManager"
             ) as mock_manager_class:
                 mock_manager = mock_manager_class.return_value
                 mock_manager.count.return_value = 0
@@ -766,7 +758,7 @@ class TestMain:
         """Test that path command works through main()."""
         with patch.object(sys, "argv", ["try7z", "path"]):
             with patch(
-                "try7z.main.PasswordManager"
+                "try7z.cli.main.PasswordManager"
             ) as mock_manager_class:
                 mock_manager = mock_manager_class.return_value
                 mock_manager.passwords_file = Path("/fake/path/passwords.json")
@@ -782,7 +774,7 @@ class TestMain:
             sys, "argv", ["try7z", "remove", "testpassword"]
         ):
             with patch(
-                "try7z.main.PasswordManager"
+                "try7z.cli.main.PasswordManager"
             ) as mock_manager_class:
                 mock_manager = mock_manager_class.return_value
                 mock_manager.get_passwords.return_value = ["testpassword"]
@@ -1385,7 +1377,7 @@ class TestAutocompletionCommand:
     def test_autocompletion_install_error(self, capsys) -> None:
         """Test handling of install errors."""
         with patch(
-            "try7z.main.install_completion",
+            "try7z.cli.main.install_completion",
             side_effect=OSError("Permission denied"),
         ):
             args = argparse.Namespace()
