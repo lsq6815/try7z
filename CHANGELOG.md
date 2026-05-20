@@ -1,3 +1,23 @@
+## v1.1.0 (2026-05-21)
+
+### Feat
+
+- add python -m docs entry point
+- **mypy**: expand type checking to docs and tests directories
+- integrate directory scanning into extract command
+- add _resolve_input_paths function for directory scanning
+
+### Fix
+
+- update try7z.main references to try7z.cli.main
+
+### Refactor
+
+- reorganize CLI code into try7z/cli package
+- **cli**: move test_cli.py to tests/cli/ and fix entry point
+- move main.py to try7z/cli/ and update imports
+- move completions.py to try7z/cli/
+
 ## v1.0.1 (2026-05-10)
 
 ### Fix
