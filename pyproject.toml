@@ -38,7 +38,7 @@ dev = [
 ]
 
 [project.scripts]
-try7z = "try7z.main:main"
+try7z = "try7z.cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -8,7 +8,6 @@ from unittest.mock import patch
 
 import pytest
 
-from try7z.extractor import get_7z_version
 from try7z.cli.main import (
     RemovalResult,
     RemoveByIndexStrategy,
@@ -25,6 +24,7 @@ from try7z.cli.main import (
     cmd_show_path,
     main,
 )
+from try7z.extractor import get_7z_version
 from try7z.password_manager import PasswordManager
 
 

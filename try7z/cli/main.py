@@ -39,7 +39,7 @@ Example:
     Using argparse.Namespace for testing::
 
         >>> import argparse
-        >>> from try7z.main import cmd_list_passwords
+        >>> from try7z.cli.main import cmd_list_passwords
         >>>
         >>> args = argparse.Namespace()
         >>> exit_code = cmd_list_passwords(args)
@@ -525,7 +525,7 @@ def _resolve_input_paths(paths: list[str]) -> list[Path]:
 
     Example:
         >>> from pathlib import Path
-        >>> from try7z.main import _resolve_input_paths
+        >>> from try7z.cli.main import _resolve_input_paths
         >>> # Resolve a single archive file
         >>> result = _resolve_input_paths(["archive.7z"])  # File must exist
         >>> len(result) == 1 if result else True
