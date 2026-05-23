@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from try7z.extractor import Extractor, get_7z_path, get_7z_version
+from try7z.extractor import Extractor, _compute_skip_depth, get_7z_path, get_7z_version
 from try7z.utils import ExtractionError, InvalidArchiveError, PasswordNotFoundError
 
 
@@ -636,3 +636,62 @@ class TestTryPasswords:
         assert password == "pwd2"
         assert attempts == 2
         assert call_count == 2
+
+
+class TestComputeSkipDepth:
+    """Tests for _compute_skip_depth."""
+
+    def test_empty_dir(self, temp_dir: Path) -> None:
+        """Empty temp dir returns 0."""
+        assert _compute_skip_depth(temp_dir) == 0
+
+    def test_multiple_root_entries(self, temp_dir: Path) -> None:
+        """Multiple entries at root returns 0."""
+        (temp_dir / "file1.txt").write_text("")
+        (temp_dir / "dir1").mkdir()
+        assert _compute_skip_depth(temp_dir) == 0
+
+    def test_single_root_file(self, temp_dir: Path) -> None:
+        """Single file at root returns 0."""
+        (temp_dir / "readme.txt").write_text("")
+        assert _compute_skip_depth(temp_dir) == 0
+
+    def test_single_child_dir(self, temp_dir: Path) -> None:
+        """Single orphan subdir returns 1."""
+        root = temp_dir / "A"
+        root.mkdir()
+        orphan = root / "B"
+        orphan.mkdir()
+        (orphan / "C1").mkdir()
+        (orphan / "C2").mkdir()
+        assert _compute_skip_depth(temp_dir) == 1
+
+    def test_deep_chain(self, temp_dir: Path) -> None:
+        """Deep single-child chain returns correct depth."""
+        chain = temp_dir / "A" / "B" / "C" / "D"
+        chain.mkdir(parents=True)
+        (chain / "file.txt").write_text("")
+        assert _compute_skip_depth(temp_dir) == 3
+
+    def test_multiple_dirs_at_second_level(self, temp_dir: Path) -> None:
+        """Root with multiple subdirs returns 0."""
+        root = temp_dir / "A"
+        root.mkdir()
+        (root / "src").mkdir()
+        (root / "doc").mkdir()
+        assert _compute_skip_depth(temp_dir) == 0
+
+    def test_mixed_file_and_dir_at_second_level(self, temp_dir: Path) -> None:
+        """Root with file + dir returns 0."""
+        root = temp_dir / "A"
+        root.mkdir()
+        (root / "readme.txt").write_text("")
+        (root / "src").mkdir()
+        (root / "src" / "main.py").write_text("")
+        assert _compute_skip_depth(temp_dir) == 0
+
+    def test_no_common_root(self, temp_dir: Path) -> None:
+        """No single root entry returns 0."""
+        (temp_dir / "file.txt").write_text("")
+        (temp_dir / "dir").mkdir()
+        assert _compute_skip_depth(temp_dir) == 0

@@ -120,6 +120,50 @@ def get_7z_version() -> str:
         return "unknown"
 
 
+def _compute_skip_depth(temp_dir: Path) -> int:
+    """Count single-child directory levels between root and first branch.
+
+    Walks the extracted temp directory tree using pathlib. The first
+    entry in temp_dir is considered the archive root and is always
+    kept. Each subsequent level that contains exactly one directory
+    (no files, no siblings) increments the skip count. Stops at the
+    first level with multiple entries or a file.
+
+    Args:
+        temp_dir: Path to the directory containing extracted archive contents.
+
+    Returns:
+        Number of single-child directory levels to skip (0 = no flattening).
+
+    Example:
+        temp_dir/
+          A/           <- root, kept
+            B/         <- single child dir -> skip
+              C1/      <- multiple entries -> stop
+              C2/
+        Returns 1 (skip B).
+    """
+    entries = list(temp_dir.iterdir())
+    if len(entries) != 1:
+        return 0
+    current = entries[0]
+    if not current.is_dir():
+        return 0
+
+    skip_depth = 0
+    while True:
+        sub_entries = list(current.iterdir())
+        if len(sub_entries) != 1:
+            break
+        child = sub_entries[0]
+        if not child.is_dir():
+            break
+        skip_depth += 1
+        current = child
+
+    return skip_depth
+
+
 class Extractor:
     """Handle archive extraction with automatic password attempts.
 
