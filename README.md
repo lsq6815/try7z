@@ -2,6 +2,12 @@
 
 A 7-Zip frontend application for automatically extracting password-protected archives using a user-saved password list.
 
+> **⚠ Security Warning**
+>
+> **Passwords are stored in plain text JSON.** Anyone with access to your computer can read them.
+> **Do NOT store any of your own real or sensitive passwords** — only use passwords that
+> archive creators (e.g., file sharing sites) distribute publicly for their archives.
+
 ## Features
 
 - Manage password list (add, remove, list, clear)
