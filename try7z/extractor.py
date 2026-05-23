@@ -41,6 +41,7 @@ import platform
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from tqdm import tqdm
@@ -352,12 +353,74 @@ class Extractor:
 
         return False, None, len(passwords_to_try)
 
+    def _flatten_extract(
+        self,
+        output_dir: Path,
+        passwords_to_try: list[str | None],
+        show_progress: bool,
+        show_password_progress: bool,
+    ) -> tuple[bool, str | None]:
+        """Extract to temp dir, flatten, then move to output.
+
+        Args:
+            output_dir: Final output directory for flattened content.
+            passwords_to_try: Password list (None = no password).
+            show_progress: Whether to show tqdm progress bar.
+            show_password_progress: Whether to show password attempt counter.
+
+        Returns:
+            Tuple of (success, used_password).
+        """
+        temp_dir = Path(tempfile.mkdtemp(dir=output_dir.parent))
+
+        try:
+            if show_progress:
+                found, pwd, attempts = self._try_passwords(
+                    temp_dir, passwords_to_try, show_password_progress
+                )
+                if not found:
+                    if show_password_progress:
+                        print()
+                    return False, None
+
+                if show_password_progress:
+                    print(f"\nFound after {attempts} trie(s)!")
+
+                skip_depth = _compute_skip_depth(temp_dir)
+                shutil.rmtree(temp_dir)
+
+                temp_dir2 = Path(tempfile.mkdtemp(dir=output_dir.parent))
+                try:
+                    success = self._extract_with_password(
+                        temp_dir2, pwd, show_progress=True
+                    )
+                    if success:
+                        _flatten_and_move(temp_dir2, output_dir, skip_depth)
+                        return True, pwd
+                    return False, None
+                finally:
+                    if temp_dir2.exists():
+                        shutil.rmtree(temp_dir2, ignore_errors=True)
+            else:
+                success, pwd, _ = self._try_passwords(
+                    temp_dir, passwords_to_try, show_password_progress
+                )
+                if success:
+                    skip_depth = _compute_skip_depth(temp_dir)
+                    _flatten_and_move(temp_dir, output_dir, skip_depth)
+                    return True, pwd
+                return False, None
+        finally:
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
     def try_extract(
         self,
         output_dir: Path | None = None,
         passwords: list[str] | None = None,
         show_progress: bool = False,
         show_password_progress: bool = False,
+        flatten: bool = False,
     ) -> tuple[bool, str | None]:
         """Attempt to extract archive with given passwords.
 
@@ -413,6 +476,14 @@ class Extractor:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         passwords_to_try: list[str | None] = list(passwords) if passwords else [None]
+
+        if flatten:
+            if output_dir is None:
+                output_dir = self.archive_path.parent / self.archive_path.stem
+            output_dir = output_dir.resolve()
+            return self._flatten_extract(
+                output_dir, passwords_to_try, show_progress, show_password_progress
+            )
 
         success = False
         used_password = None
@@ -662,6 +733,7 @@ class Extractor:
         output_dir: Path | None = None,
         show_progress: bool = False,
         show_password_progress: bool = False,
+        flatten: bool = False,
     ) -> tuple[bool, str | None]:
         """Extract archive trying multiple passwords, raising on failure.
 
@@ -704,7 +776,7 @@ class Extractor:
             ...     print("Password not in list")
         """
         success, used_password = self.try_extract(
-            output_dir, passwords, show_progress, show_password_progress
+            output_dir, passwords, show_progress, show_password_progress, flatten
         )
 
         if not success:
