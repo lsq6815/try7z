@@ -48,6 +48,77 @@ def encrypted_zip_archive(temp_dir: Path, seven_zip: Path) -> Path:
     return archive_path
 
 
+@pytest.fixture
+def nested_orphan_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create a 7z archive where src/ contains only one subdir: nested/.
+
+    Structure inside archive:
+      MyProject/
+        nested/
+          main.py
+          utils.py
+    """
+    src = temp_dir / "src"
+    proj = src / "MyProject"
+    nested = proj / "nested"
+    nested.mkdir(parents=True)
+    (nested / "main.py").write_text("print('hello')")
+    (nested / "utils.py").write_text("helpers")
+
+    archive_path = temp_dir / "nested_orphan.7z"
+    subprocess.run(
+        [str(seven_zip), "a", str(archive_path), str(proj)],
+        capture_output=True,
+        check=True,
+    )
+    return archive_path
+
+
+@pytest.fixture
+def deep_chain_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create archive with deep single-child directory chain.
+
+    Structure inside archive:
+      A/B/C/D/file.txt
+    """
+    src = temp_dir / "src"
+    chain = src / "A" / "B" / "C" / "D"
+    chain.mkdir(parents=True)
+    (chain / "file.txt").write_text("deep content")
+
+    archive_path = temp_dir / "deep_chain.7z"
+    subprocess.run(
+        [str(seven_zip), "a", str(archive_path), str(src / "A")],
+        capture_output=True,
+        check=True,
+    )
+    return archive_path
+
+
+@pytest.fixture
+def multi_dir_archive(temp_dir: Path, seven_zip: Path) -> Path:
+    """Create archive with multiple top-level subdirs (no flattening needed).
+
+    Structure inside archive:
+      MyApp/bin/app.exe
+      MyApp/doc/readme.txt
+    """
+    src = temp_dir / "src"
+    app = src / "MyApp"
+    (app / "bin").mkdir(parents=True)
+    (app / "doc").mkdir(parents=True)
+    (app / "bin" / "app.exe").write_text("binary")
+    (app / "doc" / "readme.txt").write_text("docs")
+
+    archive_path = temp_dir / "multi_dir.7z"
+    subprocess.run(
+        [str(seven_zip), "a", str(archive_path), str(app)],
+        capture_output=True,
+        check=True,
+    )
+    return archive_path
+
+
 class TestExtractor:
     """Test cases for Extractor."""
 
@@ -329,6 +400,55 @@ class TestExtractor:
         assert success is True
         assert used_password is None
         assert (output_dir / "src" / "test.txt").exists()
+
+    def test_flatten_single_orphan(
+        self, nested_orphan_archive: Path, temp_dir: Path
+    ) -> None:
+        """Flatten removes single orphan directory level."""
+        extractor = Extractor(nested_orphan_archive)
+        output_dir = temp_dir / "output"
+
+        success, password = extractor.try_extract(
+            output_dir, flatten=True
+        )
+
+        assert success is True
+        assert password is None
+        assert (output_dir / "MyProject" / "main.py").exists()
+        assert (output_dir / "MyProject" / "utils.py").exists()
+        assert not (output_dir / "MyProject" / "nested").exists()
+
+    def test_flatten_deep_chain(
+        self, deep_chain_archive: Path, temp_dir: Path
+    ) -> None:
+        """Flatten removes all single-child intermediate dirs."""
+        extractor = Extractor(deep_chain_archive)
+        output_dir = temp_dir / "output"
+
+        success, password = extractor.try_extract(
+            output_dir, flatten=True
+        )
+
+        assert success is True
+        assert password is None
+        assert (output_dir / "A" / "file.txt").exists()
+        assert not (output_dir / "A" / "B").exists()
+
+    def test_flatten_noop_multiple_dirs(
+        self, multi_dir_archive: Path, temp_dir: Path
+    ) -> None:
+        """No flattening when root has multiple subdirs (normal structure preserved)."""
+        extractor = Extractor(multi_dir_archive)
+        output_dir = temp_dir / "output"
+
+        success, password = extractor.try_extract(
+            output_dir, flatten=True
+        )
+
+        assert success is True
+        assert password is None
+        assert (output_dir / "MyApp" / "bin" / "app.exe").exists()
+        assert (output_dir / "MyApp" / "doc" / "readme.txt").exists()
 
 
 class TestGet7zVersion:
