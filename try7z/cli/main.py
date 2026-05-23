@@ -628,6 +628,7 @@ def _extract_single(
     output_dir: Path,
     passwords: list[str],
     force: bool,
+    flatten: bool = False,
 ) -> int:
     """Extract a single archive and return exit code."""
     try:
@@ -644,7 +645,8 @@ def _extract_single(
 
     try:
         success, used_password = extractor.extract_with_passwords(
-            passwords, output_dir, show_progress=True, show_password_progress=True
+            passwords, output_dir, show_progress=True, show_password_progress=True,
+            flatten=flatten,
         )
 
         if success:
@@ -726,7 +728,7 @@ def cmd_extract(
             archive_path, args.output, use_subdirectory=(total > 1)
         )
 
-        result = _extract_single(archive_path, output_dir, passwords, args.force)
+        result = _extract_single(archive_path, output_dir, passwords, args.force, flatten=args.flatten)
         if result == 0:
             success_count += 1
         else:
@@ -876,6 +878,12 @@ def main() -> int:
         "--force",
         action="store_true",
         help="Overwrite output directory without confirmation",
+    )
+    extract_parser.add_argument(
+        "-F",
+        "--flatten",
+        action="store_true",
+        help="Flatten single-child intermediate directories in extracted output",
     )
     extract_parser.set_defaults(func=cmd_extract)
 
