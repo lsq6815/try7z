@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from try7z.extractor import Extractor, _compute_skip_depth, get_7z_path, get_7z_version
+from try7z.extractor import (
+    Extractor,
+    _compute_skip_depth,
+    _flatten_and_move,
+    get_7z_path,
+    get_7z_version,
+)
 from try7z.utils import ExtractionError, InvalidArchiveError, PasswordNotFoundError
 
 
@@ -694,3 +700,95 @@ class TestComputeSkipDepth:
         (temp_dir / "file.txt").write_text("")
         (temp_dir / "dir").mkdir()
         assert _compute_skip_depth(temp_dir) == 0
+
+
+class TestFlattenAndMove:
+    """Tests for _flatten_and_move."""
+
+    def test_no_flattening_single_root(self, temp_dir: Path) -> None:
+        """skip_depth=0 moves root contents to output."""
+        src = temp_dir / "src"
+        src.mkdir()
+        root = src / "MyApp"
+        root.mkdir()
+        (root / "main.py").write_text("code")
+        (root / "doc").mkdir()
+        (root / "doc" / "readme.txt").write_text("docs")
+
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=0)
+
+        assert output.is_dir()
+        assert (output / "MyApp" / "main.py").exists()
+        assert (output / "MyApp" / "doc" / "readme.txt").exists()
+
+    def test_flatten_single_level(self, temp_dir: Path) -> None:
+        """skip_depth=1 moves orphan's children up to root."""
+        src = temp_dir / "src"
+        src.mkdir()
+        root = src / "MyProject"
+        root.mkdir()
+        orphan = root / "src"
+        orphan.mkdir()
+        (orphan / "main.py").write_text("code")
+        (orphan / "utils.py").write_text("helpers")
+
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=1)
+
+        assert output.is_dir()
+        assert (output / "MyProject" / "main.py").exists()
+        assert (output / "MyProject" / "utils.py").exists()
+        assert not (output / "MyProject" / "src").exists()
+
+    def test_flatten_deep_chain(self, temp_dir: Path) -> None:
+        """skip_depth=3 flattens deep single-child chain."""
+        src = temp_dir / "src"
+        src.mkdir()
+        root = src / "A"
+        root.mkdir()
+        chain = root / "B" / "C" / "D"
+        chain.mkdir(parents=True)
+        (chain / "file.txt").write_text("deep")
+
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=3)
+
+        assert output.is_dir()
+        assert (output / "A" / "file.txt").exists()
+        assert not (output / "A" / "B").exists()
+
+    def test_empty_temp_dir(self, temp_dir: Path) -> None:
+        """Empty temp dir creates empty output dir."""
+        src = temp_dir / "src"
+        src.mkdir()
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=0)
+
+        assert output.is_dir()
+
+    def test_flatten_preserves_sibling_dirs(self, temp_dir: Path) -> None:
+        """Multiple dirs under orphan are moved together."""
+        src = temp_dir / "src"
+        src.mkdir()
+        root = src / "App"
+        root.mkdir()
+        orphan = root / "lib"
+        orphan.mkdir()
+        (orphan / "foo").mkdir()
+        (orphan / "bar").mkdir()
+        (orphan / "foo" / "f.py").write_text("f")
+        (orphan / "bar" / "b.py").write_text("b")
+
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=1)
+
+        assert output.is_dir()
+        assert (output / "App" / "foo" / "f.py").exists()
+        assert (output / "App" / "bar" / "b.py").exists()
+        assert not (output / "App" / "lib").exists()

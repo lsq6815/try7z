@@ -164,6 +164,45 @@ def _compute_skip_depth(temp_dir: Path) -> int:
     return skip_depth
 
 
+def _flatten_and_move(temp_dir: Path, output_dir: Path, skip_depth: int) -> None:
+    """Reorganize extracted tree and move to output directory.
+
+    Reads the extracted tree from temp_dir, optionally flattens
+    skip_depth single-child directory levels, and moves the result
+    to output_dir.
+
+    Args:
+        temp_dir: Directory containing the extracted archive tree.
+        output_dir: Target directory for the (possibly flattened) output.
+        skip_depth: Number of single-child dir levels to remove.
+                   0 means no flattening (just move root contents).
+    """
+    entries = list(temp_dir.iterdir())
+    if not entries:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return
+
+    root_entry = entries[0]
+
+    if skip_depth > 0:
+        chain = root_entry
+        for _ in range(skip_depth):
+            chain = next(chain.iterdir())
+
+        for child in list(chain.iterdir()):
+            target = root_entry / child.name
+            shutil.move(str(child), str(target))
+
+        current = chain
+        while current != root_entry:
+            parent = current.parent
+            current.rmdir()
+            current = parent
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(root_entry), str(output_dir))
+
+
 class Extractor:
     """Handle archive extraction with automatic password attempts.
 
