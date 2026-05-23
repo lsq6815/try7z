@@ -728,7 +728,10 @@ def cmd_extract(
             archive_path, args.output, use_subdirectory=(total > 1)
         )
 
-        result = _extract_single(archive_path, output_dir, passwords, args.force, flatten=args.flatten)
+        result = _extract_single(
+            archive_path, output_dir, passwords, args.force,
+            flatten=getattr(args, "flatten", False),
+        )
         if result == 0:
             success_count += 1
         else:
