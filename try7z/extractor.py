@@ -184,20 +184,31 @@ def _flatten_and_move(temp_dir: Path, output_dir: Path, skip_depth: int) -> None
 
     root_entry = entries[0]
 
+    if not root_entry.is_dir():
+        output_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(root_entry), str(output_dir / root_entry.name))
+        return
+
     if skip_depth > 0:
         chain = root_entry
         for _ in range(skip_depth):
-            chain = next(chain.iterdir())
+            if not chain.is_dir():
+                break
+            sub = list(chain.iterdir())
+            if not sub:
+                break
+            chain = sub[0]
 
-        for child in list(chain.iterdir()):
-            target = root_entry / child.name
-            shutil.move(str(child), str(target))
+        if chain.is_dir() and chain != root_entry:
+            for child in list(chain.iterdir()):
+                target = root_entry / child.name
+                shutil.move(str(child), str(target))
 
-        current = chain
-        while current != root_entry:
-            parent = current.parent
-            current.rmdir()
-            current = parent
+            current = chain
+            while current != root_entry:
+                parent = current.parent
+                current.rmdir()
+                current = parent
 
     output_dir.mkdir(parents=True, exist_ok=True)
     shutil.move(str(root_entry), str(output_dir))

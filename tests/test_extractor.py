@@ -792,3 +792,34 @@ class TestFlattenAndMove:
         assert (output / "App" / "foo" / "f.py").exists()
         assert (output / "App" / "bar" / "b.py").exists()
         assert not (output / "App" / "lib").exists()
+
+    def test_single_root_file(self, temp_dir: Path) -> None:
+        """temp_dir contains a single file, skip_depth=0 -> file moved to output."""
+        src = temp_dir / "src"
+        src.mkdir()
+        (src / "README.md").write_text("hello world")
+
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=0)
+
+        assert output.is_dir()
+        assert (output / "README.md").exists()
+        assert not (output / "README.md").is_dir()
+        assert (output / "README.md").read_text() == "hello world"
+
+    def test_skip_depth_too_large(self, temp_dir: Path) -> None:
+        """skip_depth > actual chain depth doesn't crash; treats leaf as stopping point."""
+        src = temp_dir / "src"
+        src.mkdir()
+        root = src / "A"
+        root.mkdir()
+        (root / "file.txt").write_text("content")
+
+        output = temp_dir / "out"
+
+        _flatten_and_move(src, output, skip_depth=5)
+
+        assert output.is_dir()
+        assert (output / "A" / "file.txt").exists()
+        assert (output / "A" / "file.txt").read_text() == "content"
