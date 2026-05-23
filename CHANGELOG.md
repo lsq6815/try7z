@@ -1,3 +1,18 @@
+## v1.2.0 (2026-05-24)
+
+### Feat
+
+- add -F/--flatten CLI flag for smart extraction
+- add _flatten_extract helper and flatten parameter to extraction methods
+- add _flatten_and_move function with tests
+- add _compute_skip_depth function with tests
+
+### Fix
+
+- use getattr for flatten to avoid AttributeError in tests
+- remove dead code and update docstring for flatten parameter
+- handle edge cases in _flatten_and_move
+
 ## v1.1.0 (2026-05-21)
 
 ### Feat
