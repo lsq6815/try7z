@@ -219,14 +219,16 @@ class TestEdgeCases:
         passwords_file = temp_dir / "passwords.json"
         passwords_file.write_text('{"passwords": ["test"]}')
 
-        with patch("pathlib.Path.read_text", side_effect=PermissionError("Access denied")):
-            with pytest.raises(PasswordManagerError):
+        with patch(
+            "pathlib.Path.read_text", side_effect=PermissionError("Access denied")
+        ), pytest.raises(PasswordManagerError):
                 PasswordManager(data_dir=temp_dir)
 
     def test_permission_error_on_save(self, manager: PasswordManager) -> None:
         """Test handling permission error when saving passwords."""
-        with patch("pathlib.Path.write_text", side_effect=PermissionError("Access denied")):
-            with pytest.raises(PermissionError):
+        with patch(
+            "pathlib.Path.write_text", side_effect=PermissionError("Access denied")
+        ), pytest.raises(PermissionError):
                 manager.add_password("new_password")
 
 

@@ -362,11 +362,7 @@ class Extractor:
         created_by_us = not output_dir.exists()
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        passwords_to_try: list[str | None]
-        if passwords:
-            passwords_to_try = list(passwords)
-        else:
-            passwords_to_try = [None]
+        passwords_to_try: list[str | None] = list(passwords) if passwords else [None]
 
         success = False
         used_password = None
@@ -469,10 +465,10 @@ class Extractor:
 
                 raise ExtractionError(f"Extraction failed: {result.stderr or result.stdout}")
 
-            except subprocess.TimeoutExpired:
-                raise ExtractionError("Extraction timed out")
-            except FileNotFoundError:
-                raise ExtractionError(f"7-Zip executable not found: {self._7z_path}")
+            except subprocess.TimeoutExpired as e:
+                raise ExtractionError("Extraction timed out") from e
+            except FileNotFoundError as e:
+                raise ExtractionError(f"7-Zip executable not found: {self._7z_path}") from e
         else:
             # Progress bar mode
             return self._extract_with_progress(cmd)
@@ -499,7 +495,7 @@ class Extractor:
             ExtractionError: If extraction fails for non-password reasons.
         """
         # Add -bsp1 to send progress to stdout
-        cmd_with_progress = cmd + ["-bsp1"]
+        cmd_with_progress = [*cmd, "-bsp1"]
 
         # Regex to match 7-Zip progress: " 10%"
         progress_pattern = re.compile(r"^\s*(\d+)%")
@@ -599,16 +595,16 @@ class Extractor:
 
             raise ExtractionError(f"Extraction failed: {stderr or full_output_str[-500:]}")
 
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as e:
             if pbar is not None:
                 pbar.clear()
                 pbar.close()
-            raise ExtractionError("Extraction timed out")
-        except FileNotFoundError:
+            raise ExtractionError("Extraction timed out") from e
+        except FileNotFoundError as e:
             if pbar is not None:
                 pbar.clear()
                 pbar.close()
-            raise ExtractionError(f"7-Zip executable not found: {self._7z_path}")
+            raise ExtractionError(f"7-Zip executable not found: {self._7z_path}") from e
 
     def extract_with_passwords(
         self,

@@ -337,9 +337,8 @@ def _get_pwsh_profile_path() -> Path:
         if not docs.exists():
             docs = Path.home() / "My Documents"
         return docs / "PowerShell" / "Microsoft.PowerShell_profile.ps1"
-    else:
-        # Linux/macOS: pwsh is not supported
-        raise ValueError("PowerShell Core (pwsh) completion is not supported on Linux/macOS.")
+    # Linux/macOS: pwsh is not supported
+    raise ValueError("PowerShell Core (pwsh) completion is not supported on Linux/macOS.")
 
 
 def _get_powershell_profile_path() -> Path:
@@ -371,9 +370,8 @@ def _get_powershell_profile_path() -> Path:
         if not docs.exists():
             docs = Path.home() / "My Documents"
         return docs / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1"
-    else:
-        # Linux/macOS: Windows PowerShell is not supported
-        raise ValueError("Windows PowerShell is not supported on Linux/macOS.")
+    # Linux/macOS: Windows PowerShell is not supported
+    raise ValueError("Windows PowerShell is not supported on Linux/macOS.")
 
 
 def install_bash_completion() -> None:

@@ -144,7 +144,7 @@ class RemoveByValueStrategy:
                 manager.remove_password(pwd)
                 result.success_messages.append(f"Removed: {pwd}")
                 result.removed_count += 1
-            except Try7zError:
+            except Try7zError:  # noqa: PERF203
                 result.failures.append(f"Password '{pwd}' not found")
         return result
 
@@ -180,7 +180,7 @@ class RemoveByIndexStrategy:
                 removed = manager.remove_by_index(idx)
                 result.success_messages.append(f"Removed [{idx + 1}]: {removed}")
                 result.removed_count += 1
-            except Try7zError:
+            except Try7zError:  # noqa: PERF203
                 result.failures.append(f"Index {idx + 1} out of range")
         return result
 
@@ -240,7 +240,7 @@ def cmd_add_password(
             manager.add_password(password)
             added_count += 1
             added_passwords.append(password)
-        except PasswordValidationError as e:
+        except PasswordValidationError as e:  # noqa: PERF203
             print(f"Warning: {e}, skipped", file=sys.stderr)
             skipped_count += 1
         except Try7zError:
@@ -504,7 +504,7 @@ def _build_password_list(
     """
     passwords = manager.get_passwords()
     if priority_password:
-        passwords = [priority_password] + passwords
+        passwords = [priority_password, *passwords]
     return passwords
 
 
@@ -655,9 +655,8 @@ def _extract_single(
 
             print(f"Extracted to: {output_dir}")
             return 0
-        else:
-            print("Extraction failed.", file=sys.stderr)
-            return 1
+        print("Extraction failed.", file=sys.stderr)
+        return 1
 
     except PasswordNotFoundError:
         print("No matching password found", file=sys.stderr)

@@ -54,7 +54,6 @@ class Try7zError(Exception):
         ...     print(f"Application error: {e}")
     """
 
-    pass
 
 
 class PasswordValidationError(Try7zError):
@@ -72,7 +71,6 @@ class PasswordValidationError(Try7zError):
         ...     print(e)  # "Password cannot be empty"
     """
 
-    pass
 
 
 class PasswordValidator(ABC):
@@ -99,7 +97,6 @@ class PasswordValidator(ABC):
         Raises:
             PasswordValidationError: If password fails validation.
         """
-        pass
 
 
 class BasicPasswordValidator(PasswordValidator):
@@ -163,7 +160,6 @@ class PasswordManagerError(Try7zError):
         ...     print(e)  # "Password already exists"
     """
 
-    pass
 
 
 class ExtractionError(Try7zError):
@@ -181,7 +177,6 @@ class ExtractionError(Try7zError):
         ...     print(f"Extraction failed: {e}")
     """
 
-    pass
 
 
 class InvalidArchiveError(ExtractionError):
@@ -205,7 +200,6 @@ class InvalidArchiveError(ExtractionError):
         ...     print(e)  # "Unsupported archive format: .txt"
     """
 
-    pass
 
 
 class PasswordNotFoundError(ExtractionError):
@@ -223,7 +217,6 @@ class PasswordNotFoundError(ExtractionError):
         ...     print(e)  # "No matching password found for encrypted.7z"
     """
 
-    pass
 
 
 def get_user_data_dir() -> Path:
@@ -256,10 +249,9 @@ def get_user_data_dir() -> Path:
         if app_data := os.environ.get("APPDATA"):
             return Path(app_data) / "try7z"
         return Path.home() / "AppData" / "Roaming" / "try7z"
-    elif sys.platform == "darwin":
+    if sys.platform == "darwin":
         return Path.home() / "Library" / "Application Support" / "try7z"
-    else:
-        return Path.home() / ".local" / "share" / "try7z"
+    return Path.home() / ".local" / "share" / "try7z"
 
 
 def get_package_root() -> Path:

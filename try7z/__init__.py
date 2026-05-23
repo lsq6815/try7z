@@ -38,4 +38,4 @@ from importlib.metadata import version
 __version__ = version("try7z")
 __build_date__ = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-__all__ = ["__version__", "__build_date__"]
+__all__ = ["__build_date__", "__version__"]

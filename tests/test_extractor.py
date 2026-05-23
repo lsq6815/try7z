@@ -349,49 +349,54 @@ class TestGet7zPath:
     """Test cases for get_7z_path function."""
 
     def test_get_7z_path_windows_amd64(self) -> None:
-        with patch("platform.system", return_value="Windows"):
-            with patch("platform.machine", return_value="AMD64"):
-                path = get_7z_path()
-                assert path.name == "7z.exe"
-                assert "win-x64" in str(path).replace("\\", "/")
+        with patch("platform.system", return_value="Windows"), patch(
+            "platform.machine", return_value="AMD64"
+        ):
+            path = get_7z_path()
+            assert path.name == "7z.exe"
+            assert "win-x64" in str(path).replace("\\", "/")
 
     def test_get_7z_path_windows_x86_64(self) -> None:
-        with patch("platform.system", return_value="Windows"):
-            with patch("platform.machine", return_value="x86_64"):
-                path = get_7z_path()
-                assert path.name == "7z.exe"
+        with patch("platform.system", return_value="Windows"), patch(
+            "platform.machine", return_value="x86_64"
+        ):
+            path = get_7z_path()
+            assert path.name == "7z.exe"
 
     def test_get_7z_path_linux_amd64(self) -> None:
-        with patch("platform.system", return_value="Linux"):
-            with patch("platform.machine", return_value="amd64"):
-                path = get_7z_path()
-                assert path.name == "7zz"
-                assert "linux-x64" in str(path).replace("\\", "/")
+        with patch("platform.system", return_value="Linux"), patch(
+            "platform.machine", return_value="amd64"
+        ):
+            path = get_7z_path()
+            assert path.name == "7zz"
+            assert "linux-x64" in str(path).replace("\\", "/")
 
     def test_get_7z_path_linux_x86_64(self) -> None:
-        with patch("platform.system", return_value="Linux"):
-            with patch("platform.machine", return_value="x86_64"):
-                path = get_7z_path()
-                assert path.name == "7zz"
+        with patch("platform.system", return_value="Linux"), patch(
+            "platform.machine", return_value="x86_64"
+        ):
+            path = get_7z_path()
+            assert path.name == "7zz"
 
     def test_get_7z_path_darwin(self) -> None:
-        with patch("platform.system", return_value="Darwin"):
-            with patch("platform.machine", return_value="x86_64"):
-                path = get_7z_path()
-                assert path.name == "7zz"
-                assert "mac-x64" in str(path).replace("\\", "/")
+        with patch("platform.system", return_value="Darwin"), patch(
+            "platform.machine", return_value="x86_64"
+        ):
+            path = get_7z_path()
+            assert path.name == "7zz"
+            assert "mac-x64" in str(path).replace("\\", "/")
 
     def test_get_7z_path_unsupported_system(self) -> None:
-        with patch("platform.system", return_value="FreeBSD"):
-            with patch("platform.machine", return_value="x86_64"):
-                with pytest.raises(ExtractionError, match="Unsupported platform"):
-                    get_7z_path()
+        with patch("platform.system", return_value="FreeBSD"), patch(
+            "platform.machine", return_value="x86_64"
+        ), pytest.raises(ExtractionError, match="Unsupported platform"):
+            get_7z_path()
 
     def test_get_7z_path_unsupported_machine(self) -> None:
-        with patch("platform.system", return_value="Windows"):
-            with patch("platform.machine", return_value="arm64"):
-                with pytest.raises(ExtractionError, match="Unsupported platform"):
-                    get_7z_path()
+        with patch("platform.system", return_value="Windows"), patch(
+            "platform.machine", return_value="arm64"
+        ), pytest.raises(ExtractionError, match="Unsupported platform"):
+            get_7z_path()
 
 
 class TestGetArchiveFileCount:
@@ -475,19 +480,19 @@ class TestExtractWithProgress:
         stdout_data = b" 10%\r 50%\r100%\r\n"
         mock_process = self._make_mock_process(stdout_data, returncode=0)
 
-        with patch("subprocess.Popen", return_value=mock_process):
-            with patch.object(mock_process, "communicate", return_value=(b"", b"")):
-                with patch("tqdm.tqdm"):
-                    result = extractor._extract_with_progress(
-                        [
-                            str(extractor._7z_path),
-                            "x",
-                            "-y",
-                            f"-o{output_dir}",
-                            str(plain_7z_archive),
-                        ]
-                    )
-                    assert result is True
+        with patch("subprocess.Popen", return_value=mock_process), patch.object(
+            mock_process, "communicate", return_value=(b"", b"")
+        ), patch("tqdm.tqdm"):
+            result = extractor._extract_with_progress(
+                [
+                    str(extractor._7z_path),
+                    "x",
+                    "-y",
+                    f"-o{output_dir}",
+                    str(plain_7z_archive),
+                ]
+            )
+            assert result is True
 
     def test_extract_with_progress_wrong_password(
         self, encrypted_7z_archive: Path, temp_dir: Path
@@ -498,21 +503,19 @@ class TestExtractWithProgress:
         stdout_data = b"wrong password\r\n"
         mock_process = self._make_mock_process(stdout_data, returncode=2)
 
-        with patch("subprocess.Popen", return_value=mock_process):
-            with patch.object(
-                mock_process, "communicate", return_value=(b"", b"Wrong password")
-            ):
-                with patch("tqdm.tqdm"):
-                    result = extractor._extract_with_progress(
-                        [
-                            str(extractor._7z_path),
-                            "x",
-                            "-y",
-                            f"-o{output_dir}",
-                            str(encrypted_7z_archive),
-                        ]
-                    )
-                    assert result is False
+        with patch("subprocess.Popen", return_value=mock_process), patch.object(
+            mock_process, "communicate", return_value=(b"", b"Wrong password")
+        ), patch("tqdm.tqdm"):
+            result = extractor._extract_with_progress(
+                [
+                    str(extractor._7z_path),
+                    "x",
+                    "-y",
+                    f"-o{output_dir}",
+                    str(encrypted_7z_archive),
+                ]
+            )
+            assert result is False
 
     def test_extract_with_progress_extraction_error(
         self, plain_7z_archive: Path, temp_dir: Path
@@ -523,21 +526,18 @@ class TestExtractWithProgress:
         stdout_data = b"some error output\n"
         mock_process = self._make_mock_process(stdout_data, returncode=1)
 
-        with patch("subprocess.Popen", return_value=mock_process):
-            with patch.object(
-                mock_process, "communicate", return_value=(b"", b"Fatal error")
-            ):
-                with patch("tqdm.tqdm"):
-                    with pytest.raises(ExtractionError, match="Extraction failed"):
-                        extractor._extract_with_progress(
-                            [
-                                str(extractor._7z_path),
-                                "x",
-                                "-y",
-                                f"-o{output_dir}",
-                                str(plain_7z_archive),
-                            ]
-                        )
+        with patch("subprocess.Popen", return_value=mock_process), patch.object(
+            mock_process, "communicate", return_value=(b"", b"Fatal error")
+        ), patch("tqdm.tqdm"), pytest.raises(ExtractionError, match="Extraction failed"):
+            extractor._extract_with_progress(
+                [
+                    str(extractor._7z_path),
+                    "x",
+                    "-y",
+                    f"-o{output_dir}",
+                    str(plain_7z_archive),
+                ]
+            )
 
 
 class TestTryPasswords:
@@ -607,9 +607,8 @@ class TestTryPasswords:
             extractor,
             "_extract_with_password",
             side_effect=ExtractionError("Corrupted archive"),
-        ):
-            with pytest.raises(ExtractionError, match="Corrupted archive"):
-                extractor._try_passwords(output_dir, [None])
+        ), pytest.raises(ExtractionError, match="Corrupted archive"):
+            extractor._try_passwords(output_dir, [None])
 
     def test_try_passwords_catches_non_extraction_exceptions(
         self, plain_7z_archive: Path, temp_dir: Path

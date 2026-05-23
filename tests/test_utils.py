@@ -33,32 +33,35 @@ class TestGetUserDataDir:
 
     def test_get_user_data_dir_windows(self) -> None:
         """Test Windows data directory resolution."""
-        with patch.dict("os.environ", {"APPDATA": r"C:\Users\Test\AppData\Roaming"}):
-            with patch("sys.platform", "win32"):
-                result = get_user_data_dir()
-                assert result == Path(r"C:\Users\Test\AppData\Roaming\try7z")
+        with patch.dict("os.environ", {"APPDATA": r"C:\Users\Test\AppData\Roaming"}), patch(
+            "sys.platform", "win32"
+        ):
+            result = get_user_data_dir()
+            assert result == Path(r"C:\Users\Test\AppData\Roaming\try7z")
 
     def test_get_user_data_dir_windows_no_appdata(self) -> None:
         """Test Windows fallback when APPDATA not set."""
-        with patch.dict("os.environ", {}, clear=True):
-            with patch("sys.platform", "win32"):
-                with patch.object(Path, "home", return_value=Path("/home/test")):
-                    result = get_user_data_dir()
-                    assert result == Path("/home/test/AppData/Roaming/try7z")
+        with patch.dict("os.environ", {}, clear=True), patch(
+            "sys.platform", "win32"
+        ), patch.object(Path, "home", return_value=Path("/home/test")):
+            result = get_user_data_dir()
+            assert result == Path("/home/test/AppData/Roaming/try7z")
 
     def test_get_user_data_dir_darwin(self) -> None:
         """Test macOS data directory."""
-        with patch("sys.platform", "darwin"):
-            with patch.object(Path, "home", return_value=Path("/Users/test")):
-                result = get_user_data_dir()
-                assert result == Path("/Users/test/Library/Application Support/try7z")
+        with patch("sys.platform", "darwin"), patch.object(
+            Path, "home", return_value=Path("/Users/test")
+        ):
+            result = get_user_data_dir()
+            assert result == Path("/Users/test/Library/Application Support/try7z")
 
     def test_get_user_data_dir_linux(self) -> None:
         """Test Linux data directory."""
-        with patch("sys.platform", "linux"):
-            with patch.object(Path, "home", return_value=Path("/home/test")):
-                result = get_user_data_dir()
-                assert result == Path("/home/test/.local/share/try7z")
+        with patch("sys.platform", "linux"), patch.object(
+            Path, "home", return_value=Path("/home/test")
+        ):
+            result = get_user_data_dir()
+            assert result == Path("/home/test/.local/share/try7z")
 
 
 class TestSupportedExtensions:

@@ -560,10 +560,10 @@ class TestEditCommand:
         args = argparse.Namespace()
         password_manager.passwords_file.touch(exist_ok=True)
 
-        with patch("os.name", "posix"):
-            with patch("sys.platform", "darwin"):
-                with patch("subprocess.run") as mock_run:
-                    exit_code = cmd_edit_passwords(args, password_manager)
+        with patch("os.name", "posix"), patch("sys.platform", "darwin"), patch(
+            "subprocess.run"
+        ) as mock_run:
+            exit_code = cmd_edit_passwords(args, password_manager)
 
         assert exit_code == 0
         mock_run.assert_called_once_with(
@@ -575,10 +575,10 @@ class TestEditCommand:
         args = argparse.Namespace()
         password_manager.passwords_file.touch(exist_ok=True)
 
-        with patch("os.name", "posix"):
-            with patch("sys.platform", "linux"):
-                with patch("subprocess.run") as mock_run:
-                    exit_code = cmd_edit_passwords(args, password_manager)
+        with patch("os.name", "posix"), patch("sys.platform", "linux"), patch(
+            "subprocess.run"
+        ) as mock_run:
+            exit_code = cmd_edit_passwords(args, password_manager)
 
         assert exit_code == 0
         mock_run.assert_called_once_with(
@@ -710,13 +710,12 @@ class TestMain:
         """Test that add command works through main()."""
         with patch.object(
             sys, "argv", ["try7z", "add", "testpassword123"]
-        ):
-            with patch(
-                "try7z.cli.main.PasswordManager"
-            ) as mock_manager_class:
-                mock_manager = mock_manager_class.return_value
-                mock_manager.count.return_value = 1
-                exit_code = main()
+        ), patch(
+            "try7z.cli.main.PasswordManager"
+        ) as mock_manager_class:
+            mock_manager = mock_manager_class.return_value
+            mock_manager.count.return_value = 1
+            exit_code = main()
 
         assert exit_code == 0
 
@@ -743,26 +742,24 @@ class TestMain:
 
     def test_main_list_command(self, capsys) -> None:
         """Test that list command works through main()."""
-        with patch.object(sys, "argv", ["try7z", "list"]):
-            with patch(
-                "try7z.cli.main.PasswordManager"
-            ) as mock_manager_class:
-                mock_manager = mock_manager_class.return_value
-                mock_manager.count.return_value = 0
-                mock_manager.get_passwords.return_value = []
-                exit_code = main()
+        with patch.object(sys, "argv", ["try7z", "list"]), patch(
+            "try7z.cli.main.PasswordManager"
+        ) as mock_manager_class:
+            mock_manager = mock_manager_class.return_value
+            mock_manager.count.return_value = 0
+            mock_manager.get_passwords.return_value = []
+            exit_code = main()
 
         assert exit_code == 0
 
     def test_main_path_command(self, capsys) -> None:
         """Test that path command works through main()."""
-        with patch.object(sys, "argv", ["try7z", "path"]):
-            with patch(
-                "try7z.cli.main.PasswordManager"
-            ) as mock_manager_class:
-                mock_manager = mock_manager_class.return_value
-                mock_manager.passwords_file = Path("/fake/path/passwords.json")
-                exit_code = main()
+        with patch.object(sys, "argv", ["try7z", "path"]), patch(
+            "try7z.cli.main.PasswordManager"
+        ) as mock_manager_class:
+            mock_manager = mock_manager_class.return_value
+            mock_manager.passwords_file = Path("/fake/path/passwords.json")
+            exit_code = main()
 
         assert exit_code == 0
         captured = capsys.readouterr()
@@ -772,13 +769,12 @@ class TestMain:
         """Test that remove command works through main()."""
         with patch.object(
             sys, "argv", ["try7z", "remove", "testpassword"]
-        ):
-            with patch(
-                "try7z.cli.main.PasswordManager"
-            ) as mock_manager_class:
-                mock_manager = mock_manager_class.return_value
-                mock_manager.get_passwords.return_value = ["testpassword"]
-                exit_code = main()
+        ), patch(
+            "try7z.cli.main.PasswordManager"
+        ) as mock_manager_class:
+            mock_manager = mock_manager_class.return_value
+            mock_manager.get_passwords.return_value = ["testpassword"]
+            exit_code = main()
 
         assert exit_code == 0
 
@@ -1064,15 +1060,14 @@ class TestAutocompletionCommand:
         bashrc = temp_dir / ".bashrc"
         completion_file = temp_dir / ".try7z-completion.bash"
 
-        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc):
-            with patch(
-                "try7z.cli.completions.Path.home", return_value=temp_dir
-            ):
-                args = argparse.Namespace()
-                args.shell = "bash"
-                args.install = True
+        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc), patch(
+            "try7z.cli.completions.Path.home", return_value=temp_dir
+        ):
+            args = argparse.Namespace()
+            args.shell = "bash"
+            args.install = True
 
-                exit_code = cmd_autocompletion(args)
+            exit_code = cmd_autocompletion(args)
 
         assert exit_code == 0
         assert completion_file.exists()
@@ -1156,15 +1151,14 @@ class TestAutocompletionCommand:
         bashrc.write_text("# existing bashrc\n", encoding="utf-8")
         completion_file = temp_dir / ".try7z-completion.bash"
 
-        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc):
-            with patch(
-                "try7z.cli.completions.Path.home", return_value=temp_dir
-            ):
-                args = argparse.Namespace()
-                args.shell = "bash"
-                args.install = True
+        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc), patch(
+            "try7z.cli.completions.Path.home", return_value=temp_dir
+        ):
+            args = argparse.Namespace()
+            args.shell = "bash"
+            args.install = True
 
-                exit_code = cmd_autocompletion(args)
+            exit_code = cmd_autocompletion(args)
 
         assert exit_code == 0
         content = bashrc.read_text(encoding="utf-8")
@@ -1181,17 +1175,16 @@ class TestAutocompletionCommand:
         bashrc = temp_dir / ".bashrc"
         bashrc.write_text("# bashrc\n", encoding="utf-8")
 
-        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc):
-            with patch(
-                "try7z.cli.completions.Path.home", return_value=temp_dir
-            ):
-                args = argparse.Namespace()
-                args.shell = "bash"
-                args.install = True
+        with patch("try7z.cli.completions._get_bashrc_path", return_value=bashrc), patch(
+            "try7z.cli.completions.Path.home", return_value=temp_dir
+        ):
+            args = argparse.Namespace()
+            args.shell = "bash"
+            args.install = True
 
-                # Install twice
-                cmd_autocompletion(args)
-                exit_code = cmd_autocompletion(args)
+            # Install twice
+            cmd_autocompletion(args)
+            exit_code = cmd_autocompletion(args)
 
         assert exit_code == 0
         content = bashrc.read_text(encoding="utf-8")
