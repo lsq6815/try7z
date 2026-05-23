@@ -56,8 +56,7 @@ select = ["E", "F", "W", "I", "N", "UP", "C4", "SIM", "B", "RUF", "PIE", "RET", 
 
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
+strict = true
 files = ["try7z", "docs", "tests"]
 exclude = [
     "^build/",
@@ -72,10 +71,6 @@ exclude = [
 module = "sphinx.*"
 follow_imports = "skip"
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "try7z.*"
-strict = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
