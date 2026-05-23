@@ -478,9 +478,6 @@ class Extractor:
         passwords_to_try: list[str | None] = list(passwords) if passwords else [None]
 
         if flatten:
-            if output_dir is None:
-                output_dir = self.archive_path.parent / self.archive_path.stem
-            output_dir = output_dir.resolve()
             return self._flatten_extract(
                 output_dir, passwords_to_try, show_progress, show_password_progress
             )
@@ -749,6 +746,8 @@ class Extractor:
             show_password_progress: Whether to display which password is being
                                    tried. Shows "Trying password X/N..." and
                                    refreshes on the same line.
+            flatten: Whether to flatten the extracted directory structure
+                    by collapsing unnecessary intermediate folders.
 
         Returns:
             Tuple of (success, used_password). Success is always True
